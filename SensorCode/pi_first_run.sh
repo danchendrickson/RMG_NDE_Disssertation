@@ -22,4 +22,4 @@ cd Code
 
 git clone https://github.com/danchendrickson/RMG_NDE_Disssertation
 
-cp '/RMG_NDE_Dissertation/Code on Pi Sensor/*' ~/Code
+cp /home/pi/Code/RMG_NDE_Dissertation/SensorCode/* ~/Code
