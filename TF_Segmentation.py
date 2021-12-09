@@ -1,7 +1,7 @@
 #https://stackoverflow.com/questions/38719091/tensorflow-segmenting-a-signal
 
 import tensorflow as tf
-from tensorflow import flags 
+from tensorflow.python.platform import flags 
 FLAGS = tf.app.flags.FLAGS
 flags.DEFINE_string('train_dir', 'data', 'Directory to put the training data.')
 import numpy as np
@@ -115,4 +115,6 @@ def main():
     training()
 
 if __name__=='__main__':
-    main()
+    pass
+    #main()
+
