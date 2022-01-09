@@ -23,3 +23,9 @@ cd Code
 git clone https://github.com/danchendrickson/RMG_NDE_Disssertation
 
 cp /home/pi/Code/RMG_NDE_Dissertation/SensorCode/* ~/Code
+
+cd /boot
+sudo nano config.txt
+#    Add lines: 
+#    dtoverlay=i2c-gpio,bus=4,i2c_gpio_delay_us=1,i2c_gpio_sda=23,i2c_gpio_scl=24
+#    dtoverlay=i2c-gpio,bus=3,i2c_gpio_delay_us=1,i2c_gpio_sda=17,i2c_gpio_scl=27

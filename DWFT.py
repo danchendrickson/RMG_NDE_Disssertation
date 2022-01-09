@@ -429,7 +429,7 @@ def _fixLabels(fp):
         fp[fp==old_lab] = new_lab
 
 def getLabeledThumbprint(data, wavelet, ns=50, numslices=5, slicethickness=0.12,
-                         valleysorpeaks='both'):
+                         valleysorpeaks='both',logging=False):
     '''
     This function creates two fingerprints, one for the peaks of the wavelet
     coefficient matrix and another for the valleys. This allows more separation 
@@ -444,11 +444,11 @@ def getLabeledThumbprint(data, wavelet, ns=50, numslices=5, slicethickness=0.12,
     
     if valleysorpeaks == 'both' or valleysorpeaks =='peaks':
         labeledfpPeaks = getLabeledFP(data, wavelet, ns, numslices, slicethickness,
-                                      'peaks')
+                                      'peaks',logging)
         
     if valleysorpeaks == 'both' or valleysorpeaks == 'valleys':
         labeledfpValleys = getLabeledFP(data, wavelet, ns, numslices, slicethickness,
-                                        'valleys')
+                                        'valleys',logging)
     
     # shift labels in peaks matrix to ensure unique labels
     if valleysorpeaks == 'both':
@@ -467,11 +467,13 @@ def getLabeledThumbprint(data, wavelet, ns=50, numslices=5, slicethickness=0.12,
     return labeledFP
 
 def getLabeledFP(data, wavelet, ns=50, numslices=5, slicethickness=0.12, 
-                 valleysorpeaks='peaks'):
+                 valleysorpeaks='peaks',logging=False):
     '''
     Function to label just the peaks or just the valleys of a wavelet 
     fingerprint. If you want to label both peaks and valleys use 
     getLabeledThumbprint function
+
+    
     '''
     fp = getThumbprint(data, wavelet, ns, numslices, slicethickness, 
                              valleysorpeaks=valleysorpeaks, plot=False)
@@ -488,7 +490,8 @@ def getLabeledFP(data, wavelet, ns=50, numslices=5, slicethickness=0.12,
                 if result != None:
                     labeledfp[labeledfp == labelOfInterest] = result
                     labelOfInterest = result
-    
+    if logging == True:
+        if i%100==1: print(str(i) +' of ' + str(labeledfp.max()))
     return labeledfp
 
 def HOGFeatures(image, num_bins=4, window=8, unsigned=True):
