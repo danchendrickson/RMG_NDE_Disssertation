@@ -490,8 +490,8 @@ def getLabeledFP(data, wavelet, ns=50, numslices=5, slicethickness=0.12,
                 if result != None:
                     labeledfp[labeledfp == labelOfInterest] = result
                     labelOfInterest = result
-    if logging == True:
-        if i%100==1: print(str(i) +' of ' + str(labeledfp.max()))
+        if logging == True:
+            if i%100==1: print(str(i) +' of ' + str(labeledfp.max()))
     return labeledfp
 
 def HOGFeatures(image, num_bins=4, window=8, unsigned=True):
