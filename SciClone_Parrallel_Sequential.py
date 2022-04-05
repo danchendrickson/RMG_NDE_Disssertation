@@ -32,14 +32,17 @@ from sklearn.metrics import multilabel_confusion_matrix
 
 import tensorflow as tf
 
+rootFolder = "D:\\"
 
-SensorPositonFile = 'D:\\SensorStatsSmall.csv'
-folder = 'D:\\CraneData\\'
+SensorPositonFile = rootFolder + 'SensorStatsSmall.csv'
+folder = rootFolder + 'CraneData\\'
+SaveModelFolder = rootFolder + 'SavedModel\\'
 
 img_height , img_width = 3, 100
 FrameLength = img_width
-numberFrames = 600
-NumberOfFiles = 25
+numberFrames = 1200
+NumberOfFiles = 250
+num_cores = multiprocessing.cpu_count() -1
 
 OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
 
@@ -83,21 +86,33 @@ def truthVector(Filename):
 
     return results
 
-def makeFrames(input,sequ,frameLength):
+def makeFrames(input): #,sequ,frameLength):
     frames=[] #np.array([],dtype=object,)
-    segmentGap = int((np.shape(input)[0]-frameLength)/sequ)
+    segmentGap = int((np.shape(input)[0]-FrameLength)/numberFrames)
     #print(segmentGap,sequ, frameLength)
-    for i in range(sequ):
+    for i in range(numberFrames):
         start = i * segmentGap
-        imageMatrix = input[start:start+frameLength,:]
+        imageMatrix = input[start:start+FrameLength,:]
         np.matrix(imageMatrix)
         imageMatrix = imageMatrix.T
         frames.append(imageMatrix)
     
     return frames
 
+def ParseFile(Filename):
+
+    Results = truthVector(Filename)
+    
+    fileData = np.genfromtxt(open(folder+Filename,'r'), delimiter=',',skip_header=0,missing_values=0).T[2:5,:]
+    frames = makeFrames(fileData.T) #,numberFrames,img_width)
+    frames = np.asarray(frames)
+    
+    return frames, Results
+
 files = os.listdir(folder)
 files = random.sample(files,NumberOfFiles)
+
+print('Sample Created')
 
 DataSet = [] 
 
@@ -105,19 +120,20 @@ ResultsSet = np.zeros((len(files),np.shape(OutputVectors[:,11:])[1]))
 
 i=0
 
-for filename in files:
-    if filename[-3:] == 'csv':
-        ResultsSet[i,:] = truthVector(filename)
-        fileData = np.genfromtxt(open(folder+filename,'r'), delimiter=',',skip_header=0,missing_values=0).T[2:5,:]
-        frames = makeFrames(fileData.T,numberFrames,img_width)
-        frames = np.asarray(frames)
-        DataSet.append(frames)
-        i+=1
-    else: print(filename[-3:])
+Data = Parallel(n_jobs=num_cores)(delayed(ParseFile)(file) for file in files)
+
+DataSet = [] 
+i=0
+for datum in Data:
+    DataSet.append(datum[0])
+    ResultsSet[i]=datum[1][0]
+    i+=1
 
 DataSet = np.asarray(DataSet)
 
-ResultsSet = ResultsSet[0:np.shape(DataSet)[0],:]
+print('Data Parsed')
+
+#ResultsSet = ResultsSet[0:np.shape(DataSet)[0],:]
 
 X_train, X_test, y_train, y_test = train_test_split(DataSet, ResultsSet, test_size=0.20, shuffle=True, random_state=0)
 
@@ -144,3 +160,25 @@ earlystop = EarlyStopping(patience=7)
 callbacks = [earlystop]
 
 history = model.fit(x = X_train, y = y_train, epochs=40, batch_size = 8 , shuffle=False, validation_split=0.2, callbacks=callbacks)
+
+model.save(SaveModelFolder)
+
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.savefig(rootFolder + 'ModelAccuracy.png')
+plt.show()
+
+# summarize history for loss
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.savefig(rootFolder + 'ModelLoss.png')
+plt.show()
+
