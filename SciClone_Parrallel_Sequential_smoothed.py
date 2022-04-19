@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8,7 +7,6 @@ import datetime
 
 import multiprocessing
 from joblib import Parallel, delayed
-
 
 import keras
 from keras import applications
@@ -32,19 +30,23 @@ from sklearn.metrics import multilabel_confusion_matrix
 
 import tensorflow as tf
 
-
-SensorPositonFile = 'D:\\SensorStatsSmall.csv'
-folder = 'D:\\CraneData\\'
-SaveModelFolder = 'D:\\SavedModel\\'
+RootFolder = "C:\\Data\\"
+SensorPositonFile = RootFolder + 'SensorStatsSmall.csv'
+folder = RootFolder + 'SmallCopy\\'
+SaveModelFolder = RootFolder + 'SavedModel\\'
 
 img_height , img_width = 3, 100
 FrameLength = img_width
-numberFrames = 1200
-NumberOfFiles = 250
-DataSmoothing = 1 # 0 = none, 1 = rolling average, 2 = rolling StdDev
+numberFrames = 600
+DoSomeFiles = True
+NumberOfFiles = 100
+SmoothType = 1  # 0 = none, 1 = rolling average, 2 = rolling StdDev
+SmoothDistance=15
+TrainEpochs = 1
 num_cores = multiprocessing.cpu_count() -1
 
 OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
+
 
 def truthVector(Filename):
     # Parses the filename, and compares it against the record of sensor position on cranes
@@ -99,18 +101,18 @@ def makeFrames(input): #,sequ,frameLength):
     
     return frames
 
-def Smoothing(RawData, SmoothType = 1, SmoothDistance=15):
+def Smoothing(RawData): #, SmoothType = 1, SmoothDistance=15):
 
     if SmoothType == 0:
         SmoothedData = RawData
     elif SmoothType ==1:
         SmoothedData = RawData
-        for i in range(SmoothDistance):
+        for i in range(SmoothDistance-1):
             for j in range(3):
-                SmoothedData[i,j]=average(RawData[0:i,j])
+                SmoothedData[j,i+1]=np.average(RawData[j,0:i+1])
         for i in range(np.shape(RawData)[0]-SmoothDistance):
             for j in range(3):
-                SmoothedData[i+SmoothDistance,j]=np.average(RawData[i:i+SmoothDistance,j])
+                SmoothedData[j,i+SmoothDistance]=np.average(RawData[j,i:i+SmoothDistance])
 
 
     return SmoothedData
@@ -128,8 +130,9 @@ def ParseFile(Filename):
     
     return frames, Results
 
+
 files = os.listdir(folder)
-files = random.sample(files,NumberOfFiles)
+if DoSomeFiles: files = random.sample(files,NumberOfFiles)
 
 print('Sample Created')
 
@@ -137,9 +140,11 @@ DataSet = []
 
 ResultsSet = np.zeros((len(files),np.shape(OutputVectors[:,11:])[1]))
 
-i=0
 
 Data = Parallel(n_jobs=num_cores)(delayed(ParseFile)(file) for file in files)
+#Data = []
+#for file in files:
+#    Data.append(ParseFile(file))
 
 DataSet = [] 
 i=0
@@ -151,6 +156,7 @@ for datum in Data:
 DataSet = np.asarray(DataSet)
 
 print('Data Parsed')
+
 
 #ResultsSet = ResultsSet[0:np.shape(DataSet)[0],:]
 
@@ -178,7 +184,7 @@ model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=["accuracy
 earlystop = EarlyStopping(patience=7)   
 callbacks = [earlystop]
 
-history = model.fit(x = X_train, y = y_train, epochs=40, batch_size = 8 , shuffle=False, validation_split=0.2, callbacks=callbacks)
+history = model.fit(x = X_train, y = y_train, epochs=TrainEpochs, batch_size = 8 , shuffle=False, validation_split=0.2, callbacks=callbacks)
 
 model.save(SaveModelFolder)
 
@@ -188,7 +194,7 @@ plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig('D:\\ModelAccuracy.png')
+plt.savefig(RootFolder + 'ModelAccuracy.png')
 plt.show()
 
 # summarize history for loss
@@ -198,6 +204,5 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig('D:\\ModelLoss.png')
+plt.savefig(RootFolder + 'ModelLoss.png')
 plt.show()
-
