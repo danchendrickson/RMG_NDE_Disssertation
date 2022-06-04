@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -32,26 +31,22 @@ from sklearn.metrics import multilabel_confusion_matrix
 
 import tensorflow as tf
 
-print('modules loaded')
-
-#rootFolder = "D:\\"
-rootFolder = '/sciclone/data10/dchendrickson01/'
-
-SensorPositonFile = rootFolder + 'SensorStatsSmall.csv'
-folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
-SaveModelFolder = rootFolder + 'SavedMode/'
+RootFolder = '//sciclone//home20//dchendrickson01//'
+SensorPositonFile = RootFolder + 'SensorStatsSmall.csv'
+folder = '//sciclone//data10//dchendrickson01//SmallCopy//'
+SaveModelFolder = RootFolder + 'SavedModel//'
 
 img_height , img_width = 3, 100
 FrameLength = img_width
-numberFrames = 1200
-NumberOfFiles = 10
-num_cores = 2 #multiprocessing.cpu_count() -1
-
-print('variables set')
+numberFrames = 600
+DoSomeFiles = True
+NumberOfFiles = 250
+SmoothType = 1  # 0 = none, 1 = rolling average, 2 = rolling StdDev
+SmoothDistance=15
+num_cores = multiprocessing.cpu_count() -1
 
 OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
 
-print('truth file loaded')
 
 def truthVector(Filename):
     # Parses the filename, and compares it against the record of sensor position on cranes
@@ -106,20 +101,38 @@ def makeFrames(input): #,sequ,frameLength):
     
     return frames
 
+def Smoothing(RawData): #, SmoothType = 1, SmoothDistance=15):
+
+    if SmoothType == 0:
+        SmoothedData = RawData
+    elif SmoothType ==1:
+        SmoothedData = RawData
+        for i in range(SmoothDistance-1):
+            for j in range(3):
+                SmoothedData[j,i+1]=np.average(RawData[j,0:i+1])
+        for i in range(np.shape(RawData)[0]-SmoothDistance):
+            for j in range(3):
+                SmoothedData[j,i+SmoothDistance]=np.average(RawData[j,i:i+SmoothDistance])
+
+
+    return SmoothedData
+
 def ParseFile(Filename):
 
     Results = truthVector(Filename)
     
     fileData = np.genfromtxt(open(folder+Filename,'r'), delimiter=',',skip_header=0,missing_values=0).T[2:5,:]
-    frames = makeFrames(fileData.T) #,numberFrames,img_width)
+
+    smoothData = Smoothing(fileData)
+
+    frames = makeFrames(smoothData.T) #,numberFrames,img_width)
     frames = np.asarray(frames)
     
     return frames, Results
 
-print('functions defined')
 
 files = os.listdir(folder)
-files = random.sample(files,NumberOfFiles)
+if DoSomeFiles: files = random.sample(files,NumberOfFiles)
 
 print('Sample Created')
 
@@ -127,11 +140,11 @@ DataSet = []
 
 ResultsSet = np.zeros((len(files),np.shape(OutputVectors[:,11:])[1]))
 
-i=0
 
 Data = Parallel(n_jobs=num_cores)(delayed(ParseFile)(file) for file in files)
-
-print(np.shape(Data))
+#Data = []
+#for file in files:
+#    Data.append(ParseFile(file))
 
 DataSet = [] 
 i=0
@@ -142,9 +155,8 @@ for datum in Data:
 
 DataSet = np.asarray(DataSet)
 
-print(np.shape(DataSet))
-
 print('Data Parsed')
+
 
 #ResultsSet = ResultsSet[0:np.shape(DataSet)[0],:]
 
@@ -172,17 +184,17 @@ model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=["accuracy
 earlystop = EarlyStopping(patience=7)   
 callbacks = [earlystop]
 
-history = model.fit(x = X_train, y = y_train, epochs=1, batch_size = 8 , shuffle=False, validation_split=0.2, callbacks=callbacks)
+history = model.fit(x = X_train, y = y_train, epochs=40, batch_size = 8 , shuffle=False, validation_split=0.2, callbacks=callbacks)
 
 model.save(SaveModelFolder)
 
-plt.plot(history.history['accuracy'])
+plt.plot(history.history['accuracyl'])
 plt.plot(history.history['val_accuracy'])
 plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig(rootFolder + 'ModelAccuracy.png')
+plt.savefig(RootFolder + 'ModelAccuracy.png')
 plt.show()
 
 # summarize history for loss
@@ -192,6 +204,5 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig(rootFolder + 'ModelLoss.png')
+plt.savefig(RootFolder + 'ModelLoss.png')
 plt.show()
-

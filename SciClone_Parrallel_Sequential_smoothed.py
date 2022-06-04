@@ -30,16 +30,17 @@ from sklearn.metrics import multilabel_confusion_matrix
 
 import tensorflow as tf
 
-RootFolder = "C:\\Data\\"
+#RootFolder = "C:\\Data\\"
+RootFolder = "/sciclone/data10/dchendrickson01/"
 SensorPositonFile = RootFolder + 'SensorStatsSmall.csv'
-folder = RootFolder + 'SmallCopy\\'
-SaveModelFolder = RootFolder + 'SavedModel\\'
+folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
+SaveModelFolder = RootFolder + 'SavedModel/'
 
 img_height , img_width = 3, 100
 FrameLength = img_width
 numberFrames = 600
 DoSomeFiles = True
-NumberOfFiles = 100
+NumberOfFiles = 30
 SmoothType = 1  # 0 = none, 1 = rolling average, 2 = rolling StdDev
 SmoothDistance=15
 TrainEpochs = 1
