@@ -1,64 +1,27 @@
-#Standard Header used on the projects
-
-#first the major packages used for math and graphing
+import math
 import numpy as np
+import scipy.stats as st
+import pywt
+from pywt._extensions._pywt import (DiscreteContinuousWavelet, ContinuousWavelet,
+                                Wavelet, _check_dtype)
+from pywt._functions import integrate_wavelet, scale2frequency 
+from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from cycler import cycler
-import scipy.special as sp
-
-#Custome graph format style sheet
-plt.style.use('Prospectus.mplstyle')
+import platform
+import datetime
+from itertools import compress
 
 #If being run by a seperate file, use the seperate file's graph format and saving paramaeters
 #otherwise set what is needed
 if not 'Saving' in locals():
-    Saving = False
+    Saving = True
 if not 'Titles' in locals():
     Titles = True
 if not 'Ledgends' in locals():
     Ledgends = True
 if not 'FFormat' in locals():
-    FFormat = '.eps'
-if not 'location' in locals():
-    #save location.  First one is for running on home PC, second for running on the work laptop.  May need to make a global change
-    location = 'E:\\Documents\\Dan\\Code\\FigsAndPlots\\FigsAndPlotsDocument\\Figures\\'
-    #location = 'C:\\Users\\dhendrickson\\Documents\\github\\FigsAndPlots\\FigsAndPlotsDocument\\Figures\\'
-
-my_cmap = plt.get_cmap('gray')
-#Standard cycle for collors and line styles
-default_cycler = (cycler('color', ['0.00', '0.40', '0.60', '0.70']) + cycler(linestyle=['-', '--', ':', '-.']))
-plt.rc('axes', prop_cycle=default_cycler)
-
-#Project Specific packages:
-import random
-import multiprocessing
-from joblib import Parallel, delayed
-from pywt._extensions._pywt import (DiscreteContinuousWavelet, ContinuousWavelet,
-                                Wavelet, _check_dtype)
-from pywt._functions import integrate_wavelet, scale2frequency
-from time import time as ti
-import datetime
-
-from tensorflow.keras.models import Sequential, Model 
-from tensorflow.keras.layers import *
-from tensorflow.keras.callbacks import EarlyStopping
- 
-from sklearn.model_selection import train_test_split
-  
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import f1_score
-from sklearn.metrics import cohen_kappa_score
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import multilabel_confusion_matrix
-
-import os
-import platform
-#os.environ["CUDA_VISIBLE_DEVICES"]="0"  #Use for GPU    
-os.environ["CUDA_VISIBLE_DEVICES"]="-1"  #use for CPU
-
-import tensorflow as tf
+    FFormat = '.png'
 
 HostName = platform.node()
 
@@ -101,29 +64,41 @@ elif Computer =='PortLap':
     rootfolder = location 
     folder = rootfolder + 'SmallCopy\\'
 
+#Standard cycle for collors and line styles
+default_cycler = (cycler('color', ['0.00', '0.40', '0.60', '0.70']) + cycler(linestyle=['-', '--', ':', '-.']))
+plt.rc('axes', prop_cycle=default_cycler)
+my_cmap = plt.get_cmap('gray')
+PlotWidthIn = 11
+PlotHeightIn = 3.75
+PlotDPI = 120
+
+beta_a = 2
+beta_b = 5
+beta_cycles = 4
+beta_sineCosine = 1
+WaveletToUse = 'gaus2'
+#scales = np.linspace(0,2000,1001, dtype=int)
 scales = 500
-img_height , img_width = scales, 100
-FrameLength = img_width
-numberFrames = 600
-DoSomeFiles = True
-NumberOfFiles = 15
-SmoothType = 1  # 0 = none, 1 = rolling average, 2 = rolling StdDev
-SmoothDistance=10
-TrainEpochs = 4
-num_cores = multiprocessing.cpu_count() -1
+spacer = 10
+
 SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
-
-#SaveModelFolder = rootfolder + 'SavedModel\\'
-SaveModelFolder = rootfolder + 'SavedModel/'
-
-files = os.listdir(folder)
-if DoSomeFiles: files = random.sample(files,NumberOfFiles)
-
-GroupSize = 2*num_cores
-
 OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
 
-def cwt_fixed(data, scales, wavelet, sampling_period=1.):
+
+def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCycle = 0):
+    beta = np.zeros(sizes)
+    beWave = np.zeros(sizes)
+    x = np.zeros(sizes)
+    for i in range(sizes):
+        j = i / sizes
+        beta[i] = st.beta.pdf(j,a,b)
+        beWave[i] = beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle)
+        x[i]=j
+
+    beWav2 = beWave[::-1]
+    return beWav2, x
+
+def cwt_fixed(data, scales, wavelet, scalespace =1, sampling_period=1.):
     """
     COPIED AND FIXED FROM pywt.cwt TO BE ABLE TO USE WAVELET FAMILIES SUCH
     AS COIF AND DB
@@ -183,14 +158,19 @@ def cwt_fixed(data, scales, wavelet, sampling_period=1.):
     ...            vmax=abs(cwtmatr).max(), vmin=-abs(cwtmatr).max())  # doctest: +SKIP
     >>> plt.show() # doctest: +SKIP
     """
-
+    
+    #scales = get_primelist(10000)
+    
     # accept array_like input; make a copy to ensure a contiguous array
     dt = _check_dtype(data)
     data = np.array(data, dtype=dt)
-    if not isinstance(wavelet, (ContinuousWavelet, Wavelet)):
-        wavelet = DiscreteContinuousWavelet(wavelet)
+    if wavelet == 'beta':
+        pass
+    else:
+        if not isinstance(wavelet, (ContinuousWavelet, Wavelet)):
+            wavelet = DiscreteContinuousWavelet(wavelet)
     if np.isscalar(scales):
-        scales = np.array([scales])
+        scales = np.r_[1:scales+1] * scalespace
     if data.ndim == 1:
         try:
             if wavelet.complex_cwt:
@@ -199,60 +179,105 @@ def cwt_fixed(data, scales, wavelet, sampling_period=1.):
                 out = np.zeros((np.size(scales), data.size))
         except AttributeError:
             out = np.zeros((np.size(scales), data.size))
-        for i in np.arange(np.size(scales)):
-            precision = 10
+        precision = 10
+        if wavelet == 'beta':
+            int_psi, x = BetaWavelet(10000, 2,  5, 3, 2)
+        else:    
             int_psi, x = integrate_wavelet(wavelet, precision=precision)
-            step = x[1] - x[0]
+        step = x[1] - x[0]
+        for i in np.arange(np.size(scales)):
             j = np.floor(
                 np.arange(scales[i] * (x[-1] - x[0]) + 1) / (scales[i] * step))
             if np.max(j) >= np.size(int_psi):
                 j = np.delete(j, np.where((j >= np.size(int_psi)))[0])
-            coef = - np.sqrt(scales[i]) * np.diff(
-                np.convolve(data, int_psi[j.astype(int)][::-1]))
+            coef = - np.sqrt(scales[i]) * np.diff(np.convolve(data, int_psi[j.astype(int)][::-1]))
             d = (coef.size - data.size) / 2.
             out[i, :] = coef[int(np.floor(d)):int(-np.ceil(d))]
-        frequencies = scale2frequency(wavelet, scales, precision)
-        if np.isscalar(frequencies):
-            frequencies = np.array([frequencies])
-        for i in np.arange(len(frequencies)):
-            frequencies[i] /= sampling_period
-        return out, frequencies
+        #frequencies = scale2frequency(wavelet, scales, precision)
+        #if np.isscalar(frequencies):
+        #    frequencies = np.array([frequencies])
+        #for i in np.arange(len(frequencies)):
+        #    frequencies[i] /= sampling_period
+        return out
     else:
         raise ValueError("Only dim == 1 supported")
 
-def getThumbprint(data, wvt, ns=scales, numslices=5, slicethickness=0.12, 
-                  valleysorpeaks='both', normconstant=1, plot=True):
+def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
     '''
-    STarted with Spenser Kirn's code, modifed by DCH
+    Function to filter out high frequency noise from a data signal. Usually 
+    perform this before running the DWFT on the signal.
+    
+    data_in: input signal
+    
+    wvt: mother wavelet
+
+    levels: number of levels to take in transformation
+
+    dets_to_remove: details to remove in filter
+    '''
+    # vector needs to have an even length, so just zero pad if length is odd.
+    if len(data_in) % 2 != 0:
+        data_in = np.append(data_in, 0)
+    
+    coeffs = pywt.swt(data_in, wvt, level=levels)
+    
+    if levels is None:
+        levels = len(coeffs)
+    
+    for i in range(dets_to_remove):
+        dets = np.asarray(coeffs[(levels-1)-i][1])
+        dets[:] = 0
+    
+    filtered_signal = pywt.iswt(coeffs,wvt)
+    return filtered_signal
+
+def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
+                  valleysorpeaks='both', normconstant=1, plot=False):
+    '''
     Updated version of the DWFT function above that allows plotting of just
     valleys or just peaks or both. To plot just valleys set valleysorpeaks='valleys'
     to plot just peaks set valleysorpeaks='peaks' or 'both' to plot both.
     '''
     # First take the wavelet transform and then normalize to one
-    cfX, freqs = cwt_fixed(data, np.arange(1,ns+1), wvt)
+    if np.shape(data)[0] == 2:
+        wvt = data[1]
+        data = data[0]
+    
+    #try:
+    cfX = cwt_fixed(data, ns, wvt,scalespace)
     cfX = np.true_divide(cfX, abs(cfX).max()*normconstant)
-    
+
+    ns = np.shape(cfX)[0]
+
     fp = np.zeros((len(data), ns), dtype=int)
-    
+
     # Create the list of locations between -1 and 1 to preform slices. Valley
     # slices will all be below 0 and peak slices will all be above 0.
     if valleysorpeaks == 'both':
         slicelocations1 = np.arange(-1 ,0.0/numslices, 1.0/numslices)
         slicelocations2 = np.arange(1.0/numslices, 1+1.0/numslices, 1.0/numslices)
         slicelocations = np.array(np.append(slicelocations1,slicelocations2))
-        
+
+    if valleysorpeaks == 'peaks':
+        slicelocations = np.arange(1.0/numslices, 1+1.0/numslices, 1.0/numslices)
+
+    if valleysorpeaks == 'valleys':
+        slicelocations = np.arange(-1, 0.0/numslices, 1.0/numslices)
+
     for loc in slicelocations:
         for y in range(0, ns):
             for x in range(0, len(data)):
                 if cfX[y, x]>=(loc-(slicethickness/2)) and cfX[y,x]<= (loc+(slicethickness/2)):
                     fp[x,y] = 1
-                    
+
     fp = np.transpose(fp[:,:ns])
+    #except:
+    #    fp = 'fail'
+    
     return fp
 
 def RidgeCount(fingerprint):
     '''
-    From Spencer Kirn
     Count the number of times the fingerprint changes from 0 to 1 or 1 to 0 in 
     consective rows. Gives a vector representation of the DWFT
     '''
@@ -276,11 +301,136 @@ def RidgeCount(fingerprint):
     
     return ridgeCount
 
-def Smoothing(RawData): #, SmoothType = 1, SmoothDistance=15):
+def PlotFingerPrint(Input):
+    
+    #FpScat=fp.getLabeledThumbprint(data, FP,scales,slices)
+    #print(np.shape(data)[1], scales)
 
-    if SmoothType == 0:
-        SmoothedData = RawData
-    elif SmoothType ==1:
+    
+    data = Input[0]
+    title = Input[1]
+    
+    scales = np.shape(data)[0]
+    trim=0
+    slices = 3
+    Show = True
+    
+    xName = np.arange(0,np.shape(data)[1]-2*trim,1)
+    
+    if trim == 0:
+        Al,Ms  = np.meshgrid(xName,np.linspace(1,scales,scales))
+    else:
+        Al,Ms  = np.meshgrid(xName,np.linspace(1,scales,scales))
+
+    
+
+    fig1 = plt.figure(figsize=(PlotWidthIn,PlotHeightIn),dpi=PlotDPI)
+    ax1 = plt.axes()
+    if trim == 0:
+        cs1 = ax1.contourf(Al,Ms, data[:,:],cmap=my_cmap,levels=slices)
+    else:
+        cs1 = ax1.contourf(Al,Ms, data[:,trim:-trim],cmap=my_cmap,levels=slices)
+
+    if Titles: plt.title(title)
+    if Saving: plt.savefig(location+title.replace(" ", "").replace(":", "").replace(",", "").replace(".txt","")+FFormat)
+
+    if Show: plt.show()
+    else: plt.close(fig1)
+        
+    return 1
+
+def getAcceleration(FileName):
+    
+        DataSet = np.genfromtxt(open(folder+FileName,'r'), delimiter=',',skip_header=0)
+        JustFileName = FileName.rsplit('/', 1)[-1]
+        if FileName[-20:-16] == 'Gyro':
+            return [False,FileName,False]
+        else:
+            if FileName[-6:-5] == 's':
+                FileDate = FileName[-18:-7]
+                sensor = FileName[-5:-4]
+            elif FileName[-21:-16] == 'Accel':
+                FileDate = FileName[-15:-4]
+                sensor = 1
+            else:
+                FileDate = FileName[-20:-4]
+                sensor = 1
+            return [[FileDate, 'x',DataSet[:,2], sensor,JustFileName],[FileDate,'y',DataSet[:,3],sensor,JustFileName],[FileDate,'z',DataSet[:,4],sensor,JustFileName]]
+
+def KalmanFilterDenoise(data, rate=1):
+
+    #https://jamwheeler.com/college-productivity/how-to-denoise-a-1-d-signal-with-a-kalman-filter-with-python/
+    #
+
+    def oavar(data, rate, numpoints=30):
+
+        x = np.cumsum(data)
+
+        max_ratio = 1/9
+        num_points = 30
+        ms = np.unique(
+            np.logspace(0, np.log10(len(x) * max_ratio), numpoints
+           ).astype(int))        
+
+        oavars = np.empty(len(ms))
+        for i, m in enumerate(ms):
+            oavars[i] = (
+                (x[2*m:] - 2*x[m:-m] + x[:-2*m])**2
+            ).mean() / (2*m**2)
+
+        return ms / rate, oavars
+
+    def ln_NKfit(ln_tau, ln_N, ln_K):
+        tau = np.exp(ln_tau)
+        N, K = np.exp([ln_N, ln_K])
+        oadev = N**2 / tau + K**2 * (tau/3)
+        return np.log(oadev)
+
+    def get_NK(data, rate):
+        taus, oavars = oavar(data, rate)
+
+        ln_params, ln_varmatrix = (
+            curve_fit(ln_NKfit, np.log(taus), np.log(oavars))
+        )
+        return np.exp(ln_params)    
+
+    # Initialize state and uncertainty
+    state = data[0]
+    output = np.empty(len(data))
+
+    #rate = 1 # We can set this to 1, if we're calculating N, K internally
+    # N and K will just be scaled relative to the sampling rate internally
+    dt = 1/rate
+
+    N, K = get_NK(data, rate)
+
+    process_noise = K**2 * dt
+    measurement_noise = N**2 / dt
+
+    covariance = measurement_noise
+
+    for index, measurement in enumerate(data):
+        # 1. Predict state using system's model
+
+        covariance += process_noise
+
+        # Update
+        kalman_gain = covariance / (covariance + measurement_noise)
+
+        state += kalman_gain * (measurement - state)
+        covariance = (1 - kalman_gain) * covariance
+
+        output[index] = state
+
+    return output
+
+def Smoothing(RawData, SmoothType = 1, SmoothDistance=15):
+    #Smooth type 0 or other is none
+    #       type 1 is rolling average with SmoothDistance
+    #       type 2 is low-filter denoise
+    #       type 3 is Kalman filter
+
+    if SmoothType ==1:
         SmoothedData = RawData
         if np.shape(np.shape(RawData))== 2:
             for i in range(SmoothDistance-1):
@@ -294,41 +444,20 @@ def Smoothing(RawData): #, SmoothType = 1, SmoothDistance=15):
                 SmoothedData[i+1]=np.average(RawData[0:i+1])
             for i in range(np.shape(RawData)[0]-SmoothDistance):
                 SmoothedData[i+SmoothDistance]=np.average(RawData[i:i+SmoothDistance])
-
+    elif SmoothType == 2:
+        SmoothedData = low_pass_filter(RawData)
+    elif SmoothType == 3:
+        SmoothedData = KalmanFilterDenoise(RawData)
+    else:
+        SmoothedData = RawData
+    
     return SmoothedData
-
 
 def getRAcceleration(Data):
     rVals = []
     for i in range(np.shape(Data)[0]):
         rVals.append(np.sqrt(Data[i,0]**2+Data[i,1]**2+Data[i,2]**2))
     return rVals
-
-def getAcceleration(FileName):
-    try:
-        DataSet = np.genfromtxt(open(folder+FileName,'r'), delimiter=',',skip_header=0)
-        rData = getRAcceleration(DataSet[:,2:5])
-        rSmoothed = Smoothing(rData)
-        #return [[FileName,'x',DataSet[:,2]],[FileName,'y',DataSet[:,3]],[FileName,'z',DataSet[:,4]],[FileName,'r',rData]]
-        return [FileName, 'r', rSmoothed]
-    except:
-        return [False,FileName,False]
-
-def makePrints(DataArray):
-    try:
-        FingerPrint = getThumbprint(DataArray[2],'gaus2')
-        return [DataArray[0],DataArray[1],FingerPrint]
-    except:
-        return [DataArray[0], 'Fail', np.zeros(60000,500)]
-
-def getResults(FPnMd):
-    Ridges = RidgeCount(FPnMd[2][:,500:59500])
-    return [FPnMd[0],FPnMd[1],Ridges]
-
-def CountAboveThreshold(Ridges, Threshold = 10):
-    Cnum = np.count_nonzero(Ridges[2] >= Threshold)
-    return [Ridges[0],Ridges[1],Cnum]
-
 
 def truthVector(Filename):
     # Parses the filename, and compares it against the record of sensor position on cranes
@@ -370,9 +499,7 @@ def truthVector(Filename):
 
     return results
 
-
-
-def makeFrames(input): #,sequ,frameLength):
+def makeFrames(input, FrameLength = 600, numberFrames = 100): #,sequ,frameLength):
     frames=[] #np.array([],dtype=object,)
     segmentGap = int((np.shape(input)[1]-FrameLength)/numberFrames)
     #print(segmentGap,sequ, frameLength)
@@ -394,123 +521,37 @@ def makeFrames(input): #,sequ,frameLength):
     
     return frames
 
-
-
-
 def ParseData(FPwMD):
 
-    try:
-        frames = np.asarray(makeFrames(FPwMD[2]))
+        frames = np.asarray(makeFrames(FPwMD))
 
-        Results = truthVector(FPwMD[0])
+        #Results = truthVector(FPwMD[0])
 
-        return frames, Results
-    except:
-        print('Oh Fuck',FPwMD[0])
-        pass
+        return frames #, Results
+    
+def RemoveNonmovers(Moves, files, XorAll = 'All'):
 
-if np.size(files) % GroupSize == 0:
-    loops = int(np.size(files)/GroupSize)
-else:
-    loops = int(float(np.size(files))/float(GroupSize))+1
-#tmep for testing
-#loops=1
+    maxes = np.amax(Moves[:,500:], axis = 1)
+    mins = np.amin(Moves[:,500:], axis = 1)
 
-AllFingers = [] #np.asarray(dtype=object)
+    Keep = np.zeros(mins.size)
+    fKeep = np.zeros(np.size(files))
 
-for i in range(loops):
-    AllAccels = Parallel(n_jobs=num_cores)(delayed(getAcceleration)(file) for file in files[i*GroupSize:((i+1)*GroupSize)])
-    Flattened = []
-    for j in range(np.shape(AllAccels)[0]):
-        if AllAccels[j][0] == False:
-            print(j,AllAccels[j][1])
-        else: 
-            Flattened.append(AllAccels[j])
-    print('Have Data',i+1,loops)
-    Fingers =  Parallel(n_jobs=num_cores)(delayed(makePrints)(datas) for datas in Flattened)
-    if np.size(AllFingers) == 0:
-        AllFingers = Fingers
-    else:
-        AllFingers = np.concatenate((AllFingers, Fingers), axis = 0)
-    print('Have fingerprints',i+1,loops)
-    #AllRidges = Parallel(n_jobs=num_cores)(delayed(getResults)(datas) for datas in AllFingers)
-    #print('Have ridgecounts')
-    #Events=[]
-    #Events = Parallel(n_jobs=num_cores)(delayed(CountAboveThreshold)(datas) for datas in AllRidges)
-    #
-    #Events = np.matrix(Events)
-    #df = pd.DataFrame(data=Events)
-    #df.to_csv(rootfolder +'Random Check' + str(i) + '.csv', sep=',', index = False, header=False,quotechar='"')
-    #print(str(i+1)+' of '+str(loops))
+    for i in range(mins.size):
+        if i % 3 == 0:
+            if maxes[i] > 0.01 and mins[i] < -0.01:
+                Keep[i]=1
+                if XorAll == 'All': Keep[i+1]=1
+                if XorAll == 'All': Keep[i+2]=1
+                fIndex = int(i/3)
+                fKeep[fIndex] = 1
+                
 
-Data = Parallel(n_jobs=num_cores)(delayed(ParseData)(file) for file in AllFingers)
+    Keep = np.array(Keep, dtype='bool')
+    fKeep = np.array(fKeep, dtype='bool')
+                
+    SmallMoves = Moves[Keep,:]
+    SmallFiles = list(compress(files, fKeep))
 
+    return SmallMoves, SmallFiles
 
-np.shape(Data)
-
-
-
-DataSet = [] 
-ResultsSet = np.zeros((np.shape(Data)[0],np.shape(Data[0][1])[1]))
-i=0
-for datum in Data:
-    DataSet.append(datum[0])
-    ResultsSet[i]=datum[1][0]
-    i+=1
-
-DataSet = np.asarray(DataSet)
-
-print('Data Parsed')
-
-
-X_train, X_test, y_train, y_test = train_test_split(DataSet, ResultsSet, test_size=0.20, shuffle=True, random_state=0)
-
-
-np.shape(DataSet)
-
-model = Sequential()
-model.add(ConvLSTM2D(filters = 32, 
-            kernel_size = (5, 5), 
-            return_sequences = False, 
-            data_format = "channels_last", 
-            input_shape = (numberFrames, np.shape(X_train)[2], np.shape(X_train)[3], 1)
-            )
-        )
-model.add(Dropout(0.2))
-model.add(Flatten())
-model.add(Dense(128, activation="relu"))
-model.add(Dropout(0.3))
-model.add(Dense(np.shape(y_train)[1], activation = "softmax"))
- 
-model.summary()
- 
-opt = tf.keras.optimizers.SGD(learning_rate=0.001)
-model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=["accuracy"])
- 
-earlystop = EarlyStopping(patience=7)   
-callbacks = [earlystop]
-
-
-history = model.fit(x = X_train, y = y_train, epochs=TrainEpochs, batch_size = 8 , shuffle=False, validation_split=0.2, callbacks=callbacks)
-
-
-model.save(SaveModelFolder)
-
-plt.plot(history.history['accuracy'])
-plt.plot(history.history['val_accuracy'])
-plt.title('model accuracy')
-plt.ylabel('accuracy')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.savefig(rootfolder + 'ModelAccuracy.png')
-plt.show()
-
-# summarize history for loss
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.savefig(rootfolder + 'ModelLoss.png')
-plt.show()
