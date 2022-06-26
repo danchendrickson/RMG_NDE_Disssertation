@@ -1,3 +1,4 @@
+#!/sciclone/home20/dchendrickson01/.conda/envs/tfcgpu/bin/python
 #Standard Header used on the projects
 # %%
 Computer = "SciClone" # "SciClone"    "WinLap"  "LinLap"   "Desktop" 
@@ -41,7 +42,6 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import cohen_kappa_score
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import multilabel_confusion_matrix
-exit(1)
 
 
 if Computer == "SciClone":
@@ -418,7 +418,7 @@ else:
 AllFingers = []
 
 for i in range(loops):
-    AllAccels = Parallel(n_jobs=num_cores)(delayed(getAcceleration)(file) for file in files[i*GroupSize:((i+1)*GroupSize)])
+    AllAccels = Parallel(n_jobs=4)(delayed(getAcceleration)(file) for file in files[i*GroupSize:((i+1)*GroupSize)])
     Flattened = []
     for j in range(np.shape(AllAccels)[0]):
         if AllAccels[j][0] == False:
@@ -426,14 +426,14 @@ for i in range(loops):
         else: 
             Flattened.append(AllAccels[j])
     print('Have Data',i+1,loops)
-    Fingers =  Parallel(n_jobs=num_cores)(delayed(makeMatrixPrints)(datas) for datas in Flattened)
+    Fingers =  Parallel(n_jobs=4)(delayed(makeMatrixPrints)(datas) for datas in Flattened)
     if np.size(AllFingers) == 0:
         AllFingers = Fingers
     else:
         AllFingers = np.concatenate((AllFingers, Fingers), axis = 0)
     print('Have fingerprints',i+1,loops)
 
-Data = Parallel(n_jobs=num_cores)(delayed(ParseData)(file) for file in AllFingers)
+Data = Parallel(n_jobs=4)(delayed(ParseData)(file) for file in AllFingers)
 
 DataSet = [] 
 #ResultsSet = np.zeros((np.shape(Data)[0],np.shape(Data[0][1])[1]))

@@ -92,13 +92,16 @@ def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCy
     for i in range(sizes):
         j = i / sizes
         beta[i] = st.beta.pdf(j,a,b)
-        beWave[i] = beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle)
+        if sineCycle == 0:
+            beWave[i] = beta[i] * math.cos(j*math.pi*cosineCycle)
+        else:
+            beWave[i] = beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle)
         x[i]=j
 
-    beWav2 = beWave[::-1]
-    return beWav2, x
+    #beWav2 = beWave[::-1]
+    return beWave, x
 
-def cwt_fixed(data, scales, wavelet, scalespace =1, sampling_period=1.):
+def cwt_fixed(data, scales, wavelet, scalespace =1, sampling_period=1., betaParameters = [10000, beta_a,  beta_b, beta_cycles, 0]):
     """
     COPIED AND FIXED FROM pywt.cwt TO BE ABLE TO USE WAVELET FAMILIES SUCH
     AS COIF AND DB
@@ -181,7 +184,7 @@ def cwt_fixed(data, scales, wavelet, scalespace =1, sampling_period=1.):
             out = np.zeros((np.size(scales), data.size))
         precision = 10
         if wavelet == 'beta':
-            int_psi, x = BetaWavelet(10000, 2,  5, 3, 2)
+            int_psi, x = BetaWavelet(betaParameters[0], betaParameters[1], betaParameters[2], betaParameters[3], betaParameters[4])
         else:    
             int_psi, x = integrate_wavelet(wavelet, precision=precision)
         step = x[1] - x[0]
@@ -232,7 +235,7 @@ def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
     return filtered_signal
 
 def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
-                  valleysorpeaks='both', normconstant=1, plot=False):
+                  valleysorpeaks='both', normconstant=1, plot=False, betaParameters = [10000,2,5,2,3]):
     '''
     Updated version of the DWFT function above that allows plotting of just
     valleys or just peaks or both. To plot just valleys set valleysorpeaks='valleys'
@@ -244,7 +247,7 @@ def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsli
         data = data[0]
     
     #try:
-    cfX = cwt_fixed(data, ns, wvt,scalespace)
+    cfX = cwt_fixed(data, ns, wvt,scalespace,betaParameters=betaParameters)
     cfX = np.true_divide(cfX, abs(cfX).max()*normconstant)
 
     ns = np.shape(cfX)[0]
@@ -555,3 +558,18 @@ def RemoveNonmovers(Moves, files, XorAll = 'All'):
 
     return SmallMoves, SmallFiles
 
+def SegmentMove(movement, CheckRange = 750):
+    
+    DataLength = np.size(movement)
+    Segments = np.zeros(DataLength)
+
+    for i in range(DataLength):
+        if i < 100:
+            cval = 0
+        elif i<CheckRange:
+            cval = sum(movement[0:i])
+        else:
+            cval = sum(movement[i-CheckRange:i+CheckRange])
+        if cval > 50:
+                Segments[i]=2
+    return Segments
