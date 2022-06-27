@@ -12,6 +12,11 @@ import platform
 import datetime
 from itertools import compress
 
+import os
+
+import multiprocessing
+from joblib import Parallel, delayed
+
 #If being run by a seperate file, use the seperate file's graph format and saving paramaeters
 #otherwise set what is needed
 if not 'Saving' in locals():
@@ -80,6 +85,8 @@ WaveletToUse = 'gaus2'
 #scales = np.linspace(0,2000,1001, dtype=int)
 scales = 500
 spacer = 10
+
+num_cores = multiprocessing.cpu_count() -1
 
 SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
 OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
@@ -573,3 +580,88 @@ def SegmentMove(movement, CheckRange = 750):
         if cval > 50:
                 Segments[i]=2
     return Segments
+
+def PlotColorScales(Input):
+    
+    #FpScat=fp.getLabeledThumbprint(data, FP,scales,slices)
+    #print(np.shape(data)[1], scales)
+
+    
+    data = Input[0]
+    title = Input[1]
+    
+    scales = np.shape(data)[0]
+    trim=0
+    #slices = 3
+    Show = False
+    
+    xName = np.arange(0,np.shape(data)[1]-2*trim,1)
+    
+    if trim == 0:
+        Al,Ms  = np.meshgrid(xName,np.linspace(1,scales,scales))
+    else:
+        Al,Ms  = np.meshgrid(xName,np.linspace(1,scales,scales))
+
+    
+
+    fig1 = plt.figure(figsize=(PlotWidthIn,PlotHeightIn),dpi=PlotDPI)
+    ax1 = plt.axes()
+    if trim == 0:
+        cs1 = ax1.contourf(Al,Ms, data[:,:],cmap='jet',levels=256)
+    else:
+        cs1 = ax1.contourf(Al,Ms, data[:,trim:-trim],cmap='jet',levels=256)
+
+    if Titles: plt.title(title)
+    if Saving: plt.savefig(location+title.replace(" ", "").replace(":", "").replace(",", "").replace(".txt","")+FFormat)
+
+    if Show: plt.show()
+    else: plt.close()
+        
+    return 1
+
+def getScalesOnly(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
+                  valleysorpeaks='both', normconstant=1, plot=False):
+    '''Attempt to speed code where the comparisons happen too many times too slowly
+    '''
+    if np.shape(data)[0] == 2:
+        wvt = data[1]
+        data = data[0]
+    
+    #try:
+    cfX = cwt_fixed(data, ns, wvt,scalespace)
+
+    return cfX
+
+def KalmanGroup(DataMatrix):
+    waveKalmaned = np.asarray([],dtype=object)
+    waveKalmaned = Parallel(n_jobs=num_cores)(delayed(cf.KalmanFilterDenoise)(np.asarray(data).flatten()) for data in DataMatrix)
+    waveKalmaned = np.matrix(waveKalmaned)
+    length = np.shape(waveKalmaned)[0]
+    justifier = np.ones((length, np.shape(waveKalmaned)[1]))
+    average = np.zeros(length)
+    for i in range(length):
+        average[i]= np.average(waveKalmaned[i][:])
+    justifier = justifier.T * average.T
+    waveKalmaned = waveKalmaned - justifier.T
+    
+    return waveKalmaned
+
+def makeMatrixImages(DataMatrix, wvt = WaveletToUse):
+
+    xPrint = getScalesOnly(np.asarray(DataMatrix[0]).flatten(), wvt)
+    yPrint = getScalesOnly(np.asarray(DataMatrix[1]).flatten(), wvt)
+    zPrint = getScalesOnly(np.asarray(DataMatrix[2]).flatten(), wvt)
+
+    PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
+    
+    return np.asarray(PrintMatrix)
+
+def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
+
+    xPrint = getThumbprint(np.asarray(DataMatrix[0]).flatten(), wvt)
+    yPrint = getThumbprint(np.asarray(DataMatrix[1]).flatten(), wvt)
+    zPrint = getThumbprint(np.asarray(DataMatrix[2]).flatten(), wvt)
+
+    PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
+    
+    return np.asarray(PrintMatrix)
