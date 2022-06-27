@@ -634,7 +634,7 @@ def getScalesOnly(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsli
 
 def KalmanGroup(DataMatrix):
     waveKalmaned = np.asarray([],dtype=object)
-    waveKalmaned = Parallel(n_jobs=num_cores)(delayed(cf.KalmanFilterDenoise)(np.asarray(data).flatten()) for data in DataMatrix)
+    waveKalmaned = Parallel(n_jobs=num_cores)(delayed(KalmanFilterDenoise)(np.asarray(data).flatten()) for data in DataMatrix)
     waveKalmaned = np.matrix(waveKalmaned)
     length = np.shape(waveKalmaned)[0]
     justifier = np.ones((length, np.shape(waveKalmaned)[1]))
