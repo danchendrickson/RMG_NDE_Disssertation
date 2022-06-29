@@ -55,7 +55,7 @@ elif Computer == 'PortLap':
 
 if Computer ==  "SciClone":
     rootfolder = '/sciclone/home20/dchendrickson01/'
-    folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
+    folder = '/sciclone/scr10/dchendrickson01/CraneData/'
 elif Computer == "Desktop":
     rootfolder = location
     folder = rootfolder + "SmallCopy\\"
