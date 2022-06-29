@@ -81,7 +81,7 @@ beta_a = 2
 beta_b = 5
 beta_cycles = 4
 beta_sineCosine = 1
-WaveletToUse = 'gaus2'
+WaveletToUse = 'beta'
 #scales = np.linspace(0,2000,1001, dtype=int)
 scales = 500
 spacer = 10
@@ -285,6 +285,41 @@ def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsli
     #    fp = 'fail'
     
     return fp
+
+def getThumbprint2(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
+                  valleysorpeaks='both', normconstant=1, plot=False):
+    '''Attempt to speed code where the comparisons happen too many times too slowly
+    '''
+    
+        # First take the wavelet transform and then normalize to one
+    if np.shape(data)[0] == 2:
+        wvt = data[1]
+        data = data[0]
+    
+    #Get the coefficents
+    cfX = cwt_fixed(data, ns, wvt,scalespace)
+
+    #normalize the coefficents to values between 0 and 1
+    minVal = min(cfX)
+    maxVal = max(cfX)
+    rangeVal = maxVal - minVal#
+
+    cfX -= minVal
+    cfX /= rangeVal
+
+    #multiply by the number of slizes
+    cfX *= float(numslices +1)
+    
+    #add a half to move the values so that 0 becomes .5
+    cfX += 0.5
+
+    #truncate to integers
+    cfX = np.matrix(cfX, dtype = int)
+
+    #take modulous 2 so that every other integer is a value 1 or 0
+    cfX = np.mod(cfX, 2)
+   
+    return cfX
 
 def RidgeCount(fingerprint):
     '''
@@ -665,3 +700,4 @@ def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
     PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
     
     return np.asarray(PrintMatrix)
+
