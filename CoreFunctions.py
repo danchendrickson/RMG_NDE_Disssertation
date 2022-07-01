@@ -359,17 +359,15 @@ def getThumbprint2(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsl
     #normalize the coefficents to values between 0 and 1
     minVal = np.min(cfX)
     maxVal = np.max(cfX)
-    rangeVal = maxVal - minVal#
+    
+    highest = max([-minVal, maxVal])
 
-    cfX -= minVal
-    cfX /= rangeVal
+    cfX /= highest
+
 
     #multiply by the number of slizes
-    cfX *= float(numslices * 1.5)
+    cfX *= float(numslices) * 1.5
     
-    #add a half to move the values so that 0 becomes .5
-    #cfX += 0.5
-
     #truncate to integers
     cfX = np.matrix(cfX, dtype = int)
 
