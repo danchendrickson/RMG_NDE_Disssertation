@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import scipy.stats as st
+import scipy.signal as ss
 import pywt
 from pywt._extensions._pywt import (DiscreteContinuousWavelet, ContinuousWavelet,
                                 Wavelet, _check_dtype)
@@ -81,7 +82,7 @@ beta_a = 2
 beta_b = 5
 beta_cycles = 4
 beta_sineCosine = 1
-WaveletToUse = 'gaus2'
+WaveletToUse = 'beta'
 #scales = np.linspace(0,2000,1001, dtype=int)
 scales = 500
 spacer = 10
@@ -212,6 +213,52 @@ def cwt_fixed(data, scales, wavelet, scalespace =1, sampling_period=1., betaPara
     else:
         raise ValueError("Only dim == 1 supported")
 
+
+def cwt_fixed_scipy(data, scales, wavelet, scalespace =1, sampling_period=1., betaParameters = [10000, beta_a,  beta_b, beta_cycles, 0]):
+    
+    #scales = get_primelist(10000)
+    
+    # accept array_like input; make a copy to ensure a contiguous array
+    dt = _check_dtype(data)
+    data = np.array(data, dtype=dt)
+    if wavelet == 'beta':
+        pass
+    else:
+        if not isinstance(wavelet, (ContinuousWavelet, Wavelet)):
+            wavelet = DiscreteContinuousWavelet(wavelet)
+    if np.isscalar(scales):
+        scales = np.r_[1:scales+1] * scalespace
+    if data.ndim == 1:
+        try:
+            if wavelet.complex_cwt:
+                out = np.zeros((np.size(scales), data.size), dtype=complex)
+            else:
+                out = np.zeros((np.size(scales), data.size))
+        except AttributeError:
+            out = np.zeros((np.size(scales), data.size))
+        precision = 10
+        if wavelet == 'beta':
+            int_psi, x = BetaWavelet(betaParameters[0], betaParameters[1], betaParameters[2], betaParameters[3], betaParameters[4])
+        else:    
+            int_psi, x = integrate_wavelet(wavelet, precision=precision)
+        step = x[1] - x[0]
+        for i in np.arange(np.size(scales)):
+            j = np.floor(
+                np.arange(scales[i] * (x[-1] - x[0]) + 1) / (scales[i] * step))
+            if np.max(j) >= np.size(int_psi):
+                j = np.delete(j, np.where((j >= np.size(int_psi)))[0])
+            coef = - np.sqrt(scales[i]) * np.diff(ss.fftconvolve(data, int_psi[j.astype(int)][::-1]))
+            d = (coef.size - data.size) / 2.
+            out[i, :] = coef[int(np.floor(d)):int(-np.ceil(d))]
+        #frequencies = scale2frequency(wavelet, scales, precision)
+        #if np.isscalar(frequencies):
+        #    frequencies = np.array([frequencies])
+        #for i in np.arange(len(frequencies)):
+        #    frequencies[i] /= sampling_period
+        return out
+    else:
+        raise ValueError("Only dim == 1 supported")
+
 def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
     '''
     Function to filter out high frequency noise from a data signal. Usually 
@@ -285,6 +332,41 @@ def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsli
     #    fp = 'fail'
     
     return fp
+
+def getThumbprint2(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
+                  valleysorpeaks='both', normconstant=1, plot=False):
+    '''Attempt to speed code where the comparisons happen too many times too slowly
+    '''
+    
+        # First take the wavelet transform and then normalize to one
+    if np.shape(data)[0] == 2:
+        wvt = data[1]
+        data = data[0]
+    
+    #Get the coefficents
+    cfX = cwt_fixed_scipy(data, ns, wvt,scalespace)
+
+    #normalize the coefficents to values between 0 and 1
+    minVal = np.min(cfX)
+    maxVal = np.max(cfX)
+    rangeVal = maxVal - minVal#
+
+    cfX -= minVal
+    cfX /= rangeVal
+
+    #multiply by the number of slizes
+    cfX *= float(numslices * 1.5)
+    
+    #add a half to move the values so that 0 becomes .5
+    #cfX += 0.5
+
+    #truncate to integers
+    cfX = np.matrix(cfX, dtype = int)
+
+    #take modulous 2 so that every other integer is a value 1 or 0
+    cfX = np.mod(cfX, 2)
+   
+    return cfX
 
 def RidgeCount(fingerprint):
     '''
@@ -628,7 +710,7 @@ def getScalesOnly(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsli
         data = data[0]
     
     #try:
-    cfX = cwt_fixed(data, ns, wvt,scalespace)
+    cfX = cwt_fixed_scipy(data, ns, wvt,scalespace)
 
     return cfX
 
@@ -665,3 +747,4 @@ def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
     PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
     
     return np.asarray(PrintMatrix)
+
