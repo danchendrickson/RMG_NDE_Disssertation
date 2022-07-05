@@ -441,7 +441,12 @@ def PlotFingerPrint(Input):
 
 def getAcceleration(FileName):
     
-        DataSet = np.genfromtxt(open(folder+FileName,'r'), delimiter=',',skip_header=0)
+        #try:
+    
+        try:
+            DataSet = np.genfromtxt(open(folder+FileName,'r'), delimiter=',',skip_header=0)
+        except:
+            DataSet = np.zeros((8,60000))
         JustFileName = FileName.rsplit('/', 1)[-1]
         if FileName[-20:-16] == 'Gyro':
             return [False,FileName,False]
@@ -456,6 +461,8 @@ def getAcceleration(FileName):
                 FileDate = FileName[-20:-4]
                 sensor = 1
             return [[FileDate, 'x',DataSet[:,2], sensor,JustFileName],[FileDate,'y',DataSet[:,3],sensor,JustFileName],[FileDate,'z',DataSet[:,4],sensor,JustFileName]]
+        #except:
+        #return [False,FileName,False]
 
 def KalmanFilterDenoise(data, rate=1):
 
@@ -671,7 +678,7 @@ def SegmentMove(movement, CheckRange = 750):
                 Segments[i]=2
     return Segments
 
-def PlotColorScales(Input):
+def PlotColorScales(Input, title = 'None Given', Show = True, trim = 0):
     
     #FpScat=fp.getLabeledThumbprint(data, FP,scales,slices)
     #print(np.shape(data)[1], scales)
@@ -681,9 +688,9 @@ def PlotColorScales(Input):
     title = Input[1]
     
     scales = np.shape(data)[0]
-    trim=0
+    #trim=0
     #slices = 3
-    Show = False
+    #Show = True
     
     xName = np.arange(0,np.shape(data)[1]-2*trim,1)
     
