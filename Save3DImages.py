@@ -93,11 +93,11 @@ def saveImage(FP, FName):
 
 def MakeImageFiles(files):
     numF = np.size(files)
-    Keep = np.zeros(numF)
+    Keep = np.ones(numF)
     for i in range(numF):
         if os.path.isfile(imFolder + files[i] + '.png'):
-            Keep[i]=1
-    Keep = np.array(Keep, dtype=int)   
+            Keep[i]=0
+    Keep = np.array(Keep, dtype=bool)   
     files=np.array(files)[Keep]
     
     AllAccels = Parallel(n_jobs=num_cores)(delayed(cf.getAcceleration)(file) for file in files)
