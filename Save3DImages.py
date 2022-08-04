@@ -4,7 +4,7 @@
 #Standard Header used on the projects
 # %%
 
-dataSize = 'big'  # 'small'
+dataSize = 'big' #'big'  # 'small'
 
 #first the major packages used for math and graphing
 import numpy as np
@@ -51,6 +51,7 @@ if Computer ==  "SciClone":
         imFolder ='/sciclone/scr10/dchendrickson01/BigData/'
     else:
         folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
+        imFolder = '/sciclone/data10/dchendrickson01/SmallCopy/'
 elif Computer == "Desktop":
     rootfolder = location
     if dataSize == 'big':
@@ -78,7 +79,7 @@ GroupSize = NumberOfFiles
 
 
 files = os.listdir(folder)
-if DoSomeFiles: files = random.sample(files,NumberOfFiles)
+if DoSomeFiles: files = random.sample(files,NumberOfFiles*2)
 
 import CoreFunctions as cf
 

@@ -441,28 +441,28 @@ def PlotFingerPrint(Input):
 
 def getAcceleration(FileName):
     
-        #try:
-    
         try:
-            DataSet = np.genfromtxt(open(folder+FileName,'r'), delimiter=',',skip_header=0)
-        except:
-            DataSet = np.zeros((8,60000))
-        JustFileName = FileName.rsplit('/', 1)[-1]
-        if FileName[-20:-16] == 'Gyro':
-            return [False,FileName,False]
-        else:
-            if FileName[-6:-5] == 's':
-                FileDate = FileName[-18:-7]
-                sensor = FileName[-5:-4]
-            elif FileName[-21:-16] == 'Accel':
-                FileDate = FileName[-15:-4]
-                sensor = 1
+    
+            try:
+                DataSet = np.genfromtxt(open(folder+FileName,'r'), delimiter=',',skip_header=0)
+            except:
+                DataSet = np.zeros((8,60000))
+            JustFileName = FileName.rsplit('/', 1)[-1]
+            if FileName[-20:-16] == 'Gyro':
+                return [False,FileName,False]
             else:
-                FileDate = FileName[-20:-4]
-                sensor = 1
-            return [[FileDate, 'x',DataSet[:,2], sensor,JustFileName],[FileDate,'y',DataSet[:,3],sensor,JustFileName],[FileDate,'z',DataSet[:,4],sensor,JustFileName]]
-        #except:
-        #return [False,FileName,False]
+                if FileName[-6:-5] == 's':
+                    FileDate = FileName[-18:-7]
+                    sensor = FileName[-5:-4]
+                elif FileName[-21:-16] == 'Accel':
+                    FileDate = FileName[-15:-4]
+                    sensor = 1
+                else:
+                    FileDate = FileName[-20:-4]
+                    sensor = 1
+                return [[FileDate, 'x',DataSet[:,2], sensor,JustFileName],[FileDate,'y',DataSet[:,3],sensor,JustFileName],[FileDate,'z',DataSet[:,4],sensor,JustFileName]]
+        except:
+            return [False,FileName,False]
 
 def KalmanFilterDenoise(data, rate=1):
 
@@ -726,6 +726,11 @@ def getScalesOnly(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsli
     
     #try:
     cfX = cwt_fixed_scipy(data, ns, wvt,scalespace)
+    mins = np.min(cfX)
+    maxs = np.max(cfX)
+    cfX -= mins
+    cfX *= 1/(maxs-mins)
+    cfX *= 255
 
     return cfX
 
@@ -755,10 +760,10 @@ def makeMatrixImages(DataMatrix, wvt = WaveletToUse):
 
 def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
 
-    xPrint = getThumbprint(np.asarray(DataMatrix[0]).flatten(), wvt)
-    yPrint = getThumbprint(np.asarray(DataMatrix[1]).flatten(), wvt)
-    zPrint = getThumbprint(np.asarray(DataMatrix[2]).flatten(), wvt)
+    xPrint = getThumbprint(np.asarray(DataMatrix[0]).flatten(), wvt)*255
+    yPrint = getThumbprint(np.asarray(DataMatrix[1]).flatten(), wvt)*255
+    zPrint = getThumbprint(np.asarray(DataMatrix[2]).flatten(), wvt)*255
 
-    PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
+    PrintMatrix = np.dstack((xPrint.T,yPrint.T,zPrint.T))
     
     return np.asarray(PrintMatrix)
