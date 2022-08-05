@@ -54,6 +54,7 @@ if Computer ==  "SciClone":
         imFolder = '/sciclone/data10/dchendrickson01/SmallCopy/'
 elif Computer == "Desktop":
     rootfolder = location
+    imFolder = "E:\\Backups\\Dan\\CraneData\\Images\\"
     if dataSize == 'big':
         folder = 'G:\\CraneData\\'
     else:
@@ -68,7 +69,7 @@ elif Computer == "LinLap":
 
 scales = 500
 #img_height , img_width = scales, 200
-DoSomeFiles = False
+DoSomeFiles = True
 
 SmoothType = 3  # 0 = none, 1 = rolling average, 2 = low pass filter, 3 = Kalman filter
 WaveletToUse = 'beta'
@@ -84,7 +85,9 @@ if DoSomeFiles: files = random.sample(files,NumberOfFiles*2)
 import CoreFunctions as cf
 
 def resizeImage(FP):
-    res = cv2.resize(FP, dsize=(int(np.shape(FP)[0]/2), int(np.shape(FP)[1]/6)), interpolation=cv2.INTER_CUBIC)
+    length = int(np.shape(FP)[1]/6)
+    width = int(np.shape(FP)[0]/2)
+    res = cv2.resize(FP, dsize=(length, width), interpolation=cv2.INTER_LINEAR_EXACT)
 
     return res
 
@@ -177,7 +180,7 @@ count = MakeImageFiles(GroupFiles)
 starttime = datetime.datetime.now()
 looptime = starttime
 i = 1
-while GroupsLeft > 0:
+while GroupsLeft > 1:
     SplitRatio = 1/(GroupsLeft)
 
     RemainingFiles, GroupFiles, x,y = train_test_split(RemainingFiles, range(len(RemainingFiles)), test_size=SplitRatio, shuffle=True, random_state=0)
@@ -193,3 +196,7 @@ while GroupsLeft > 0:
     i+=1
     looptime = tNow
 
+count = MakeImageFiles(RemainingFiles)
+tNow = datetime.datetime.now()
+print(count,i,GroupsLeft, tNow-starttime, tNow-looptime)
+print("Done")
