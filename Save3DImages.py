@@ -177,7 +177,7 @@ count = MakeImageFiles(GroupFiles)
 starttime = datetime.datetime.now()
 looptime = starttime
 i = 1
-while GroupsLeft > 0:
+while GroupsLeft > 1:
     SplitRatio = 1/(GroupsLeft)
 
     RemainingFiles, GroupFiles, x,y = train_test_split(RemainingFiles, range(len(RemainingFiles)), test_size=SplitRatio, shuffle=True, random_state=0)
@@ -192,4 +192,12 @@ while GroupsLeft > 0:
         #saver.save(sess,'model.ckpt')
     i+=1
     looptime = tNow
+
+count = MakeImageFiles(RemainingFiles)
+tNow = datetime.datetime.now()
+
+GroupsLeft -=1
+i+=1
+
+print(count,i,GroupsLeft, tNow-starttime, tNow-looptime)
 

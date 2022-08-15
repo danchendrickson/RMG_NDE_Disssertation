@@ -372,7 +372,7 @@ def getThumbprint2(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsl
     cfX = np.matrix(cfX, dtype = int)
 
     #take modulous 2 so that every other integer is a value 1 or 0
-    cfX = np.mod(cfX, 2)
+    cfX = np.mod(cfX, 2).T
    
     return cfX
 
@@ -508,15 +508,19 @@ def KalmanFilterDenoise(data, rate=1):
     #rate = 1 # We can set this to 1, if we're calculating N, K internally
     # N and K will just be scaled relative to the sampling rate internally
     dt = 1/rate
+    
+    try:
 
-    N, K = get_NK(data, rate)
+    
+     N, K = get_NK(data, rate)
 
-    process_noise = K**2 * dt
-    measurement_noise = N**2 / dt
+     process_noise = K**2 * dt
+     measurement_noise = N**2 / dt
 
-    covariance = measurement_noise
+     covariance = measurement_noise
 
-    for index, measurement in enumerate(data):
+    
+     for index, measurement in enumerate(data):
         # 1. Predict state using system's model
 
         covariance += process_noise
@@ -528,7 +532,8 @@ def KalmanFilterDenoise(data, rate=1):
         covariance = (1 - kalman_gain) * covariance
 
         output[index] = state
-
+    except:
+        output = np.ones(len(data))
     return output
 
 def Smoothing(RawData, SmoothType = 1, SmoothDistance=15):
@@ -763,6 +768,16 @@ def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
     xPrint = getThumbprint(np.asarray(DataMatrix[0]).flatten(), wvt)*255
     yPrint = getThumbprint(np.asarray(DataMatrix[1]).flatten(), wvt)*255
     zPrint = getThumbprint(np.asarray(DataMatrix[2]).flatten(), wvt)*255
+
+    PrintMatrix = np.dstack((xPrint.T,yPrint.T,zPrint.T))
+    
+    return np.asarray(PrintMatrix)
+
+def makeMPFast(DataMatrix, wvt = WaveletToUse):
+
+    xPrint = getThumbprint2(np.asarray(DataMatrix[0]).flatten(), wvt)*255
+    yPrint = getThumbprint2(np.asarray(DataMatrix[1]).flatten(), wvt)*255
+    zPrint = getThumbprint2(np.asarray(DataMatrix[2]).flatten(), wvt)*255
 
     PrintMatrix = np.dstack((xPrint.T,yPrint.T,zPrint.T))
     
