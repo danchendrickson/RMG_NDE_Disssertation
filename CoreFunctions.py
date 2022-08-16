@@ -101,6 +101,8 @@ num_cores = multiprocessing.cpu_count() -1
 
 SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
 OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
+OutputTitles = OutputVectors[0,:]
+OutputVectors = OutputVectors[1:,:]
 
 
 def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCycle = 0):
@@ -115,7 +117,7 @@ def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCy
         else:
             beWave[i] = beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle)
         x[i]=j
-
+        
     #beWav2 = beWave[::-1]
     return beWave, x
 
@@ -604,12 +606,57 @@ def truthVector(Filename):
 
     results = OutputVectors[mask,11:]
 
+    
     if i > 1: 
         print('Found Two ', Filename)
         results = results[0,:]
     #np.array(results)
 
     return results
+
+
+def truthClass(Filename):
+    # Parses the filename, and compares it against the record of sensor position on cranes
+    # inputs: filename
+    # outputs: truth vector
+
+
+    #Parsing the file name.  Assuming it is in the standard format
+    sSensor = Filename[23]
+    sDate = datetime.datetime.strptime('20'+Filename[10:21],"%Y%m%d-%H%M")
+
+    mask = []
+
+    i=0
+    #loops through the known sensor movements, and creates a filter mask
+    for spf in OutputVectors:
+        
+        startDate = datetime.datetime.strptime(str(spf[0])+str(spf[1]).zfill(2)+str(spf[2]).zfill(2)
+            +str(spf[3]).zfill(2)+str(spf[4]).zfill(2),"%Y%m%d%H%M")
+        #datetime.date(int(spf[0]), int(spf[1]), int(spf[2])) + datetime.timedelta(hours=spf[3]) + datetime.timedelta(minutes=spf[4])
+        endDate = datetime.datetime.strptime(str(spf[5])+str(spf[6]).zfill(2)+str(spf[7]).zfill(2)
+            +str(spf[8]).zfill(2)+str(spf[9]).zfill(2),"%Y%m%d%H%M")
+        #datetime.date(int(spf[5]), int(spf[6]), int(spf[7])) + datetime.timedelta(hours=spf[8]) + datetime.timedelta(minutes=spf[9])
+        
+        if sDate >= startDate and sDate <= endDate and int(spf[10]) == int(sSensor):
+            mask.append(True)
+            i+=1
+        else:
+            mask.append(False)
+        
+    if i != 1: print('error ', i, Filename)
+
+    results = OutputVectors[mask,11:]
+    results = np.array(results, dtype='bool')
+    titles = OutputTitles[11:]
+    result = titles[results]
+    
+    if i > 1: 
+        print('Found Two ', Filename)
+        results = results[0,:]
+    #np.array(results)
+
+    return result
 
 def makeFrames(input, FrameLength = 600, numberFrames = 100): #,sequ,frameLength):
     frames=[] #np.array([],dtype=object,)
