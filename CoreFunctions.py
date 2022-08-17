@@ -826,6 +826,6 @@ def makeMPFast(DataMatrix, wvt = WaveletToUse):
     yPrint = getThumbprint2(np.asarray(DataMatrix[1]).flatten(), wvt)*255
     zPrint = getThumbprint2(np.asarray(DataMatrix[2]).flatten(), wvt)*255
 
-    PrintMatrix = np.dstack((xPrint.T,yPrint.T,zPrint.T))
+    PrintMatrix = np.dstack((np.asarray(xPrint.T),np.asarray(yPrint.T),np.asarray(zPrint.T)))
     
     return np.asarray(PrintMatrix)

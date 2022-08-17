@@ -65,8 +65,7 @@ elif Computer =="WinLap":
 elif Computer == "LinLap":
     rootfolder = '/home/dan/Data/'
     folder = rootfolder + 'SmallCopy/'
-    
-
+   
 scales = 500
 #img_height , img_width = scales, 200
 DoSomeFiles = False
@@ -94,6 +93,7 @@ def resizeImage(FP):
 def saveImage(FP, FName):
     cv2.imwrite(imFolder + FName + '.png', FP)
     return 1
+
 
 def MakeImageFiles(files):
     numF = np.size(files)
@@ -164,8 +164,6 @@ def MakeImageFiles(files):
 
 GroupSize = NumberOfFiles
 
-
-
 fCount = len(files)
 GroupsLeft = int(fCount/GroupSize) + 1
 
@@ -180,6 +178,7 @@ count = MakeImageFiles(GroupFiles)
 starttime = datetime.datetime.now()
 looptime = starttime
 i = 1
+
 while GroupsLeft > 1:
     SplitRatio = 1/(GroupsLeft)
 
@@ -196,6 +195,7 @@ while GroupsLeft > 1:
     i+=1
     looptime = tNow
 
+    
 count = MakeImageFiles(RemainingFiles)
 tNow = datetime.datetime.now()
 print(count,i,GroupsLeft, tNow-starttime, tNow-looptime)
