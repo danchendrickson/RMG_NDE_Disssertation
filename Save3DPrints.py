@@ -48,7 +48,7 @@ if Computer ==  "SciClone":
     rootfolder = '/sciclone/home20/dchendrickson01/'
     if dataSize == 'big':
         folder = '/sciclone/scr10/dchendrickson01/CraneData/'
-        imFolder ='/sciclone/scr10/dchendrickson01/BigPrints/'
+        imFolder ='/sciclone/scr10/dchendrickson01/FuzzyPrints/'
     else:
         folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
         imFolder = '/sciclone/data10/dchendrickson01/SmallCopy/'
@@ -66,11 +66,11 @@ elif Computer == "LinLap":
     rootfolder = '/home/dan/Data/'
     folder = rootfolder + 'SmallCopy/'
    
-scales = 500
+scales = 1000
 #img_height , img_width = scales, 200
 DoSomeFiles = False
 
-SmoothType = 3  # 0 = none, 1 = rolling average, 2 = low pass filter, 3 = Kalman filter
+SmoothType = 0  # 0 = none, 1 = rolling average, 2 = low pass filter, 3 = Kalman filter
 WaveletToUse = 'beta'
 
 num_cores = multiprocessing.cpu_count() -1
@@ -79,6 +79,9 @@ GroupSize = NumberOfFiles
 
 
 files = os.listdir(folder)
+
+files=files[::-1]
+
 if DoSomeFiles: files = random.sample(files,NumberOfFiles*2)
 
 import CoreFunctions as cf
@@ -128,7 +131,8 @@ def MakeImageFiles(files):
 
     MetaData = np.matrix(MetaData)
 
-    AllAccels = cf.KalmanGroup(DataOnlyMatrix)
+    #AllAccels = cf.KalmanGroup(DataOnlyMatrix)
+    AllAccels = DataOnlyMatrix
 
     del DataOnlyMatrix
 

@@ -48,7 +48,7 @@ if Computer ==  "SciClone":
     rootfolder = '/sciclone/home20/dchendrickson01/'
     if dataSize == 'big':
         folder = '/sciclone/scr10/dchendrickson01/CraneData/'
-        imFolder ='/sciclone/scr10/dchendrickson01/BigData/'
+        imFolder ='/sciclone/scr10/dchendrickson01/Db3Coef/'
     else:
         folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
         imFolder = '/sciclone/data10/dchendrickson01/SmallCopy/'
@@ -71,7 +71,7 @@ scales = 500
 DoSomeFiles = False
 
 SmoothType = 3  # 0 = none, 1 = rolling average, 2 = low pass filter, 3 = Kalman filter
-WaveletToUse = 'beta'
+WaveletToUse = 'db3'
 
 num_cores = multiprocessing.cpu_count() -1
 NumberOfFiles = num_cores - 2
