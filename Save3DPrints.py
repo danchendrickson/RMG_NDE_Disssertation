@@ -80,7 +80,7 @@ GroupSize = NumberOfFiles
 
 files = os.listdir(folder)
 
-files=files[::-1]
+#files=files[::-1]
 
 if DoSomeFiles: files = random.sample(files,NumberOfFiles*2)
 

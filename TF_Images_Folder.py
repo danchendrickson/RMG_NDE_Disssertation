@@ -70,7 +70,7 @@ if Computer ==  "SciClone":
     rootfolder = '/sciclone/home20/dchendrickson01/'
     if dataSize == 'big':
         folder = '/sciclone/scr10/dchendrickson01/CraneData/'
-        imFolder ='/sciclone/scr10/dchendrickson01/BigPrints/'
+        imFolder ='/sciclone/scr10/dchendrickson01/BigData/'
     else:
         folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
 elif Computer == "Desktop":
