@@ -17,6 +17,7 @@ import datetime
 from itertools import compress
 
 import os
+import cv2
 
 import multiprocessing
 from joblib import Parallel, delayed
@@ -101,6 +102,8 @@ num_cores = multiprocessing.cpu_count() -1
 
 SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
 OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
+OutputTitles = OutputVectors[0,:]
+OutputVectors = OutputVectors[1:,:]
 
 
 def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCycle = 0):
@@ -115,7 +118,7 @@ def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCy
         else:
             beWave[i] = beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle)
         x[i]=j
-
+        
     #beWav2 = beWave[::-1]
     return beWave, x
 
@@ -226,9 +229,65 @@ def cwt_fixed(data, scales, wavelet, scalespace =1, sampling_period=1., betaPara
 
 def cwt_fixed_scipy(data, scales, wavelet, scalespace =1, sampling_period=1., betaParameters = [10000, beta_a,  beta_b, beta_cycles, 0]):
     
-    #scales = get_primelist(10000)
-    
-    # accept array_like input; make a copy to ensure a contiguous array
+    '''
+			Modified verstion of cwt_fixed() by Spencer Kirn
+			COPIED AND FIXED FROM pywt.cwt TO BE ABLE TO USE WAVELET FAMILIES SUCH
+			AS COIF AND DB
+			
+			COPIED From Spenser Kirn
+			
+			All wavelet work except bior family, rbio family, haar, and db1.
+			
+			cwt(data, scales, wavelet)
+			
+			One dimensional Continuous Wavelet Transform.
+			
+			Parameters
+			----------
+			data : array_like
+				Input signal
+			scales : array_like
+				scales to use
+			wavelet : Wavelet object or name
+				Wavelet to use
+			scalespace: integer
+				If usingging spacing beteen scales, allowing quicker computation at lower resuolution	
+			Returns
+			-------
+			coefs : array_like
+			Continous wavelet transform of the input signal for the given scales
+			and wavelet
+			frequencies : array_like
+			if the unit of sampling period are seconds and given, than frequencies
+			are in hertz. Otherwise Sampling period of 1 is assumed.
+			
+			Notes
+			-----
+			Size of coefficients arrays depends on the length of the input array and
+			the length of given scales.
+			
+			Examples
+			--------
+			>>> import pywt
+			>>> import numpy as np
+			>>> import matplotlib.pyplot as plt
+			>>> x = np.arange(512)
+			>>> y = np.sin(2*np.pi*x/32)
+			>>> coef, freqs=pywt.cwt(y,np.arange(1,129),'gaus1')
+			>>> plt.matshow(coef) # doctest: +SKIP
+			>>> plt.show() # doctest: +SKIP
+			----------
+			>>> import pywt
+			>>> import numpy as np
+			>>> import matplotlib.pyplot as plt
+			>>> t = np.linspace(-1, 1, 200, endpoint=False)
+			>>> sig  = np.cos(2 * np.pi * 7 * t) + np.real(np.exp(-7*(t-0.4)**2)*np.exp(1j*2*np.pi*2*(t-0.4)))
+			>>> widths = np.arange(1, 31)
+			>>> cwtmatr, freqs = pywt.cwt(sig, widths, 'mexh')
+			>>> plt.imshow(cwtmatr, extent=[-1, 1, 1, 31], cmap='PRGn', aspect='auto',
+			...            vmax=abs(cwtmatr).max(), vmin=-abs(cwtmatr).max())  # doctest: +SKIP
+			>>> plt.show() # doctest: +SKIP
+		'''
     dt = _check_dtype(data)
     data = np.array(data, dtype=dt)
     if wavelet == 'beta':
@@ -345,7 +404,21 @@ def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsli
 
 def getThumbprint2(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
                   valleysorpeaks='both', normconstant=1, plot=False):
-    '''Attempt to speed code where the comparisons happen too many times too slowly
+    '''Modifications of DWFT code from Spencer Kirn and Margerat Rooney.  Calculates the thumbprint using
+		   matrix math to the great extent possible allowing it to go faster than nested loops and comparisons.
+		   The code does not allow for differences in positive and negative slice thickness, and has the same
+		   thickeness for both white and dark bands.
+		   
+		   Inputs:
+		   		data: the signal to be fingerprinted
+		   		wvt: the wavelet that will be used
+		   		ns = the number of scales that the 2d wavlet will be analyzed over
+		   		scalespace = instead of doing every scall, you can skip and only calculate ever nth, with 
+		   		      lower resolution, but more scales and quicker processing
+		   		numslices = the number of white bands.  There will then be n-1 black bands.
+		   	
+		   	Output:
+		   		2D matrix of 0's and 1's for the length of the data x the number of scales
     '''
     
         # First take the wavelet transform and then normalize to one
@@ -372,7 +445,7 @@ def getThumbprint2(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsl
     cfX = np.matrix(cfX, dtype = int)
 
     #take modulous 2 so that every other integer is a value 1 or 0
-    cfX = np.mod(cfX, 2)
+    cfX = np.mod(cfX, 2).T
    
     return cfX
 
@@ -508,15 +581,19 @@ def KalmanFilterDenoise(data, rate=1):
     #rate = 1 # We can set this to 1, if we're calculating N, K internally
     # N and K will just be scaled relative to the sampling rate internally
     dt = 1/rate
+    
+    try:
 
-    N, K = get_NK(data, rate)
+    
+     N, K = get_NK(data, rate)
 
-    process_noise = K**2 * dt
-    measurement_noise = N**2 / dt
+     process_noise = K**2 * dt
+     measurement_noise = N**2 / dt
 
-    covariance = measurement_noise
+     covariance = measurement_noise
 
-    for index, measurement in enumerate(data):
+    
+     for index, measurement in enumerate(data):
         # 1. Predict state using system's model
 
         covariance += process_noise
@@ -528,7 +605,8 @@ def KalmanFilterDenoise(data, rate=1):
         covariance = (1 - kalman_gain) * covariance
 
         output[index] = state
-
+    except:
+        output = np.ones(len(data))
     return output
 
 def Smoothing(RawData, SmoothType = 1, SmoothDistance=15):
@@ -599,12 +677,57 @@ def truthVector(Filename):
 
     results = OutputVectors[mask,11:]
 
+    
     if i > 1: 
         print('Found Two ', Filename)
         results = results[0,:]
     #np.array(results)
 
     return results
+
+
+def truthClass(Filename):
+    # Parses the filename, and compares it against the record of sensor position on cranes
+    # inputs: filename
+    # outputs: truth vector
+
+
+    #Parsing the file name.  Assuming it is in the standard format
+    sSensor = Filename[23]
+    sDate = datetime.datetime.strptime('20'+Filename[10:21],"%Y%m%d-%H%M")
+
+    mask = []
+
+    i=0
+    #loops through the known sensor movements, and creates a filter mask
+    for spf in OutputVectors:
+        
+        startDate = datetime.datetime.strptime(str(spf[0])+str(spf[1]).zfill(2)+str(spf[2]).zfill(2)
+            +str(spf[3]).zfill(2)+str(spf[4]).zfill(2),"%Y%m%d%H%M")
+        #datetime.date(int(spf[0]), int(spf[1]), int(spf[2])) + datetime.timedelta(hours=spf[3]) + datetime.timedelta(minutes=spf[4])
+        endDate = datetime.datetime.strptime(str(spf[5])+str(spf[6]).zfill(2)+str(spf[7]).zfill(2)
+            +str(spf[8]).zfill(2)+str(spf[9]).zfill(2),"%Y%m%d%H%M")
+        #datetime.date(int(spf[5]), int(spf[6]), int(spf[7])) + datetime.timedelta(hours=spf[8]) + datetime.timedelta(minutes=spf[9])
+        
+        if sDate >= startDate and sDate <= endDate and int(spf[10]) == int(sSensor):
+            mask.append(True)
+            i+=1
+        else:
+            mask.append(False)
+        
+    if i != 1: print('error ', i, Filename)
+
+    results = OutputVectors[mask,11:]
+    results = np.array(results, dtype='bool')
+    titles = OutputTitles[11:]
+    result = titles[results]
+    
+    if i > 1: 
+        print('Found Two ', Filename)
+        results = results[0,:]
+    #np.array(results)
+
+    return result
 
 def makeFrames(input, FrameLength = 600, numberFrames = 100): #,sequ,frameLength):
     frames=[] #np.array([],dtype=object,)
@@ -765,5 +888,35 @@ def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
     zPrint = getThumbprint(np.asarray(DataMatrix[2]).flatten(), wvt)*255
 
     PrintMatrix = np.dstack((xPrint.T,yPrint.T,zPrint.T))
+    
+    return np.asarray(PrintMatrix)
+
+def makeMPFast(DataMatrix, wvt = WaveletToUse, title = ''):
+    '''
+        Makes a 3D thumbprint images from a 3D motion source.
+        The XYZ components of Acceleration each are turned into a thumbprint
+        and the thumbprints are then stored as the RBG colors for a single image.
+
+        Inputs:
+            DataMatrix: 3 arrays of XYZ components of a signal
+            wvt: The wavelet used to make the DWFP
+            title: if a title is given, the image will be saved as a 
+                    png with that file name, if not given, not saved
+        Outputs:
+            array of 3 arrays that can be an 0-255 color depth image
+
+        Notes:
+            other getThumprint2 inputs are left at defaults, such as scales,
+            scale spacing, etc.
+    
+    '''
+    xPrint = getThumbprint2(np.asarray(DataMatrix[0]).flatten(), wvt)*255
+    yPrint = getThumbprint2(np.asarray(DataMatrix[1]).flatten(), wvt)*255
+    zPrint = getThumbprint2(np.asarray(DataMatrix[2]).flatten(), wvt)*255
+
+    PrintMatrix = np.dstack((np.asarray(xPrint.T),np.asarray(yPrint.T),np.asarray(zPrint.T)))
+
+    if len(title)> 1:
+        cv2.imwrite(title + '.png', PrintMatrix)
     
     return np.asarray(PrintMatrix)

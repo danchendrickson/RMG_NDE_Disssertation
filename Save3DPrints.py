@@ -48,7 +48,7 @@ if Computer ==  "SciClone":
     rootfolder = '/sciclone/home20/dchendrickson01/'
     if dataSize == 'big':
         folder = '/sciclone/scr10/dchendrickson01/CraneData/'
-        imFolder ='/sciclone/scr10/dchendrickson01/BigPrints/'
+        imFolder ='/sciclone/scr10/dchendrickson01/FuzzyPrints/'
     else:
         folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
         imFolder = '/sciclone/data10/dchendrickson01/SmallCopy/'
@@ -65,13 +65,12 @@ elif Computer =="WinLap":
 elif Computer == "LinLap":
     rootfolder = '/home/dan/Data/'
     folder = rootfolder + 'SmallCopy/'
-    
-
-scales = 500
+   
+scales = 1000
 #img_height , img_width = scales, 200
-DoSomeFiles = True
+DoSomeFiles = False
 
-SmoothType = 3  # 0 = none, 1 = rolling average, 2 = low pass filter, 3 = Kalman filter
+SmoothType = 0  # 0 = none, 1 = rolling average, 2 = low pass filter, 3 = Kalman filter
 WaveletToUse = 'beta'
 
 num_cores = multiprocessing.cpu_count() -1
@@ -80,13 +79,16 @@ GroupSize = NumberOfFiles
 
 
 files = os.listdir(folder)
+
+#files=files[::-1]
+
 if DoSomeFiles: files = random.sample(files,NumberOfFiles*2)
 
 import CoreFunctions as cf
 
 def resizeImage(FP):
     length = int(np.shape(FP)[1]/6)
-    width = int(np.shape(FP)[0]/2)
+    width = int(np.shape(FP)[0])
     res = cv2.resize(FP, dsize=(length, width), interpolation=cv2.INTER_LINEAR_EXACT)
 
     return res
@@ -94,6 +96,7 @@ def resizeImage(FP):
 def saveImage(FP, FName):
     cv2.imwrite(imFolder + FName + '.png', FP)
     return 1
+
 
 def MakeImageFiles(files):
     numF = np.size(files)
@@ -128,7 +131,8 @@ def MakeImageFiles(files):
 
     MetaData = np.matrix(MetaData)
 
-    AllAccels = cf.KalmanGroup(DataOnlyMatrix)
+    #AllAccels = cf.KalmanGroup(DataOnlyMatrix)
+    AllAccels = DataOnlyMatrix
 
     del DataOnlyMatrix
 
@@ -152,7 +156,7 @@ def MakeImageFiles(files):
 
     MotionsLeft = int(np.shape(AllAccels)[0]/3.0)
 
-    AllFingers =  Parallel(n_jobs=num_cores)(delayed(cf.makeMatrixPrints)([AllAccels[i*3],AllAccels[i*3+1],AllAccels[i*3+2]]) for i in range(MotionsLeft))
+    AllFingers =  Parallel(n_jobs=num_cores)(delayed(cf.makeMPFast)([AllAccels[i*3],AllAccels[i*3+1],AllAccels[i*3+2]]) for i in range(MotionsLeft))
     del AllAccels
 
     SmallFingers =  Parallel(n_jobs=num_cores)(delayed(resizeImage)(FP) for FP in AllFingers)
@@ -163,8 +167,6 @@ def MakeImageFiles(files):
     return sum(count)
 
 GroupSize = NumberOfFiles
-
-
 
 fCount = len(files)
 GroupsLeft = int(fCount/GroupSize) + 1
@@ -180,6 +182,7 @@ count = MakeImageFiles(GroupFiles)
 starttime = datetime.datetime.now()
 looptime = starttime
 i = 1
+
 while GroupsLeft > 1:
     SplitRatio = 1/(GroupsLeft)
 
@@ -196,6 +199,7 @@ while GroupsLeft > 1:
     i+=1
     looptime = tNow
 
+    
 count = MakeImageFiles(RemainingFiles)
 tNow = datetime.datetime.now()
 print(count,i,GroupsLeft, tNow-starttime, tNow-looptime)
