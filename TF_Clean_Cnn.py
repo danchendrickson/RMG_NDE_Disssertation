@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 im_h = 500
 im_w = 10000
 
+run_name = 'TF_BigData'
+
 batchSize = 6
 
 #tf.config.set_visible_devices([], 'GPU')
@@ -19,25 +21,25 @@ model = tf.keras.models.Sequential([
     tf.keras.layers.MaxPooling2D(4, 4),
     # The second convolution
     tf.keras.layers.Conv2D(32, (4,4), activation='relu'),
-    tf.keras.layers.MaxPooling2D(2,2),
+    tf.keras.layers.MaxPooling2D(4,4),
     # The third convolution
     tf.keras.layers.Conv2D(32, (4,4), activation='relu'),
-    tf.keras.layers.MaxPooling2D(2,2),
+    tf.keras.layers.MaxPooling2D(4,4),
     # Flatten the results to feed into a DNN
     tf.keras.layers.Flatten(),
     # 512 neuron hidden layer
-    tf.keras.layers.Dense(256, activation='relu'),
+    tf.keras.layers.Dense(512, activation='relu'),
     # Only 1 output neuron. It will contain a value from 0-1 where 0 for 1 class ('horses') and 1 for the other ('humans')
     tf.keras.layers.Dense(1, activation='sigmoid')
 ])
 
 model.compile(loss='binary_crossentropy',
-              optimizer=RMSprop(learning_rate=0.001),
+              optimizer=RMSprop(learning_rate=0.05),
               metrics=['acc'])
 
-print('DB3 Prints Folder')
+print('Big Data folders')
 
-imFolder = '/sciclone/scr10/dchendrickson01/DB3Prints/'
+imFolder = '/sciclone/scr10/dchendrickson01/BigData/'
 
 # All images will be rescaled by 1./255
 generator = ImageDataGenerator(rescale=1./255, validation_split = 0.2)
@@ -62,13 +64,13 @@ StepsNeeded=len(train_generator)
 history = model.fit(
       train_generator,
       steps_per_epoch=StepsNeeded,  
-      epochs=24,
+      epochs=9,
       validation_data=validation_generator,
       validation_steps=len(validation_generator)/4,
       verbose=1)
 
 
-model.save(imFolder+'Model2/')
+model.save(imFolder+run_name+'/')
 
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
@@ -76,7 +78,7 @@ plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig(imFolder + 'ModelAccuracy2.png')
+plt.savefig(imFolder + 'ModelAccuracy'+run_name+'.png')
 plt.show()
 
 # summarize history for loss
@@ -86,5 +88,5 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig(imFolder + 'ModelLoss2.png')
+plt.savefig(imFolder + 'ModelLoss'+run_name+'.png')
 plt.show()
