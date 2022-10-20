@@ -48,7 +48,7 @@ if Computer ==  "SciClone":
     rootfolder = '/sciclone/home20/dchendrickson01/'
     if dataSize == 'big':
         folder = '/sciclone/scr10/dchendrickson01/CraneData/'
-        imFolder ='/sciclone/scr10/dchendrickson01/Db3Coef/'
+        imFolder ='/sciclone/scr10/dchendrickson01/sym6C/'
     else:
         folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
         imFolder = '/sciclone/data10/dchendrickson01/SmallCopy/'
@@ -71,7 +71,7 @@ scales = 500
 DoSomeFiles = False
 
 SmoothType = 3  # 0 = none, 1 = rolling average, 2 = low pass filter, 3 = Kalman filter
-WaveletToUse = 'db3'
+WaveletToUse = 'sym6'
 
 num_cores = multiprocessing.cpu_count() -1
 NumberOfFiles = num_cores - 2
@@ -153,9 +153,8 @@ def MakeImageFiles(files):
 
     MotionsLeft = int(np.shape(AllAccels)[0]/3.0)
 
-    AllFingers =  Parallel(n_jobs=num_cores)(delayed(cf.makeMatrixImages)([AllAccels[i*3],AllAccels[i*3+1],AllAccels[i*3+2]], WaveletToUse) for i in range(MotionsLeft))
+    AllFingers =  Parallel(n_jobs=num_cores)(delayed(cf.makeMatrixImages)([AllAccels[i*3],AllAccels[i*3+1],AllAccels[i*3+2]], WaveletToUse, scales, 1)for i in range(MotionsLeft))
     del AllAccels
-
     SmallFingers =  Parallel(n_jobs=num_cores)(delayed(resizeImage)(FP) for FP in AllFingers)
     del AllFingers
 

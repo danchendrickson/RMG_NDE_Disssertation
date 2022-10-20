@@ -48,7 +48,7 @@ if Computer ==  "SciClone":
     rootfolder = '/sciclone/home20/dchendrickson01/'
     if dataSize == 'big':
         folder = '/sciclone/scr10/dchendrickson01/CraneData/'
-        imFolder ='/sciclone/scr10/dchendrickson01/FuzzyPrints/'
+        imFolder ='/sciclone/scr10/dchendrickson01/sym6P/'
     else:
         folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
         imFolder = '/sciclone/data10/dchendrickson01/SmallCopy/'
@@ -70,8 +70,8 @@ scales = 1000
 #img_height , img_width = scales, 200
 DoSomeFiles = False
 
-SmoothType = 0  # 0 = none, 1 = rolling average, 2 = low pass filter, 3 = Kalman filter
-WaveletToUse = 'beta'
+SmoothType = 2  # 0 = none, 1 = rolling average, 2 = low pass filter, 3 = Kalman filter
+WaveletToUse = 'sym6'
 
 num_cores = multiprocessing.cpu_count() -1
 NumberOfFiles = num_cores - 2
@@ -80,7 +80,7 @@ GroupSize = NumberOfFiles
 
 files = os.listdir(folder)
 
-#files=files[::-1]
+files=files[::-1]
 
 if DoSomeFiles: files = random.sample(files,NumberOfFiles*2)
 
@@ -156,7 +156,7 @@ def MakeImageFiles(files):
 
     MotionsLeft = int(np.shape(AllAccels)[0]/3.0)
 
-    AllFingers =  Parallel(n_jobs=num_cores)(delayed(cf.makeMPFast)([AllAccels[i*3],AllAccels[i*3+1],AllAccels[i*3+2]]) for i in range(MotionsLeft))
+    AllFingers =  Parallel(n_jobs=num_cores)(delayed(cf.makeMPFast)([AllAccels[i*3],AllAccels[i*3+1],AllAccels[i*3+2]], WaveletToUse) for i in range(MotionsLeft))
     del AllAccels
 
     SmallFingers =  Parallel(n_jobs=num_cores)(delayed(resizeImage)(FP) for FP in AllFingers)
