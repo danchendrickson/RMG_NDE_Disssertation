@@ -5,10 +5,10 @@ from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 
-im_h = 500
-im_w = 10000
+im_h = 250
+im_w = 1000
 
-run_name = 'TF_BigData'
+run_name = 'TF_sym6Print'
 
 batchSize = 6
 
@@ -17,10 +17,10 @@ batchSize = 6
 model = tf.keras.models.Sequential([
     # Note the input shape is the desired size of the image 300x300 with 3 bytes color
     # This is the first convolution
-    tf.keras.layers.Conv2D(32, (6,6), activation='relu', input_shape=(im_h, im_w, 3)),
+    tf.keras.layers.Conv2D(64, (6,6), activation='relu', input_shape=(im_h, im_w, 3)),
     tf.keras.layers.MaxPooling2D(4, 4),
     # The second convolution
-    tf.keras.layers.Conv2D(32, (4,4), activation='relu'),
+    tf.keras.layers.Conv2D(64, (4,4), activation='relu'),
     tf.keras.layers.MaxPooling2D(4,4),
     # The third convolution
     tf.keras.layers.Conv2D(32, (4,4), activation='relu'),
@@ -39,7 +39,7 @@ model.compile(loss='binary_crossentropy',
 
 print('Big Data folders')
 
-imFolder = '/sciclone/scr10/dchendrickson01/BigData/'
+imFolder = '/sciclone/scr10/dchendrickson01/sym6P/'
 
 # All images will be rescaled by 1./255
 generator = ImageDataGenerator(rescale=1./255, validation_split = 0.2)

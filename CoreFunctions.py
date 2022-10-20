@@ -474,14 +474,26 @@ def RidgeCount(fingerprint):
     
     return ridgeCount
 
-def PlotFingerPrint(Input):
+def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving):
+    '''
+    Makes an image of a fingerprint based on the Input data.  Does not calculate fingerprint with this funciton
+    This functions takes the output of one of the makeFingerprint functions
     
+    Inputs:
+        data is a matrix of 0,1 from a fingerprint
+        title is the title for the image, blank by default
+        SaveSpot is where the image should be saved, if it is to be saved, default is the class initialization default loaction
+        ToSave is whether the image should be just displated, or also saved, by default uses the Saving parameter
+        
+    Outputs:
+        displayed or saved image of a fingerprint
+    '''
     #FpScat=fp.getLabeledThumbprint(data, FP,scales,slices)
     #print(np.shape(data)[1], scales)
 
     
-    data = Input[0]
-    title = Input[1]
+    #data = Input[0]
+    #title = Input[1]
     
     scales = np.shape(data)[0]
     trim=0
@@ -505,7 +517,7 @@ def PlotFingerPrint(Input):
         cs1 = ax1.contourf(Al,Ms, data[:,trim:-trim],cmap=my_cmap,levels=slices)
 
     if Titles: plt.title(title)
-    if Saving: plt.savefig(location+title.replace(" ", "").replace(":", "").replace(",", "").replace(".txt","")+FFormat)
+    if ToSave: plt.savefig(SaveSpot+title.replace(" ", "").replace(":", "").replace(",", "").replace(".txt","")+FFormat)
 
     if Show: plt.show()
     else: plt.close(fig1)
@@ -801,7 +813,7 @@ def SegmentMove(movement, CheckRange = 750):
                 Segments[i]=2
     return Segments
 
-def PlotColorScales(Input, title = 'None Given', Show = True, trim = 0):
+def PlotColorScales(Input, title = 'None Given', Show = True, trim = 0, saveSpot = location):
     
     #FpScat=fp.getLabeledThumbprint(data, FP,scales,slices)
     #print(np.shape(data)[1], scales)
@@ -832,15 +844,14 @@ def PlotColorScales(Input, title = 'None Given', Show = True, trim = 0):
         cs1 = ax1.contourf(Al,Ms, data[:,trim:-trim],cmap='jet',levels=256)
 
     if Titles: plt.title(title)
-    if Saving: plt.savefig(location+title.replace(" ", "").replace(":", "").replace(",", "").replace(".txt","")+FFormat)
+    if Saving: plt.savefig(saveSpot+title.replace(" ", "").replace(":", "").replace(",", "").replace(".txt","")+FFormat)
 
     if Show: plt.show()
     else: plt.close()
         
     return 1
 
-def getScalesOnly(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
-                  valleysorpeaks='both', normconstant=1, plot=False):
+def getScalesOnly(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, plot=False):
     '''Attempt to speed code where the comparisons happen too many times too slowly
     '''
     if np.shape(data)[0] == 2:
@@ -871,11 +882,11 @@ def KalmanGroup(DataMatrix):
     
     return waveKalmaned
 
-def makeMatrixImages(DataMatrix, wvt = WaveletToUse):
+def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1):
 
-    xPrint = getScalesOnly(np.asarray(DataMatrix[0]).flatten(), wvt)
-    yPrint = getScalesOnly(np.asarray(DataMatrix[1]).flatten(), wvt)
-    zPrint = getScalesOnly(np.asarray(DataMatrix[2]).flatten(), wvt)
+    xPrint = getScalesOnly(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)
+    yPrint = getScalesOnly(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)
+    zPrint = getScalesOnly(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)
 
     PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
     
@@ -891,7 +902,7 @@ def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
     
     return np.asarray(PrintMatrix)
 
-def makeMPFast(DataMatrix, wvt = WaveletToUse, title = ''):
+def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title = ''):
     '''
         Makes a 3D thumbprint images from a 3D motion source.
         The XYZ components of Acceleration each are turned into a thumbprint
@@ -900,6 +911,8 @@ def makeMPFast(DataMatrix, wvt = WaveletToUse, title = ''):
         Inputs:
             DataMatrix: 3 arrays of XYZ components of a signal
             wvt: The wavelet used to make the DWFP
+            sacales: number of scales to using in makig the wavelet
+            spacer: weather or not the scales are consecutive integers, or skip numbers
             title: if a title is given, the image will be saved as a 
                     png with that file name, if not given, not saved
         Outputs:
@@ -910,9 +923,9 @@ def makeMPFast(DataMatrix, wvt = WaveletToUse, title = ''):
             scale spacing, etc.
     
     '''
-    xPrint = getThumbprint2(np.asarray(DataMatrix[0]).flatten(), wvt)*255
-    yPrint = getThumbprint2(np.asarray(DataMatrix[1]).flatten(), wvt)*255
-    zPrint = getThumbprint2(np.asarray(DataMatrix[2]).flatten(), wvt)*255
+    xPrint = getThumbprint2(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)*255
+    yPrint = getThumbprint2(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)*255
+    zPrint = getThumbprint2(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)*255
 
     PrintMatrix = np.dstack((np.asarray(xPrint.T),np.asarray(yPrint.T),np.asarray(zPrint.T)))
 
