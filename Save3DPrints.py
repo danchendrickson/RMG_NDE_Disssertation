@@ -80,7 +80,7 @@ GroupSize = NumberOfFiles
 
 files = os.listdir(folder)
 
-files=files[::-1]
+#files=files[::-1]
 
 if DoSomeFiles: files = random.sample(files,NumberOfFiles*2)
 
@@ -156,14 +156,18 @@ def MakeImageFiles(files):
 
     MotionsLeft = int(np.shape(AllAccels)[0]/3.0)
 
-    AllFingers =  Parallel(n_jobs=num_cores)(delayed(cf.makeMPFast)([AllAccels[i*3],AllAccels[i*3+1],AllAccels[i*3+2]], WaveletToUse) for i in range(MotionsLeft))
-    del AllAccels
+    try:
+        AllFingers =  Parallel(n_jobs=num_cores)(delayed(cf.makeMPFast)([AllAccels[i*3],AllAccels[i*3+1],AllAccels[i*3+2]], WaveletToUse) for i in range(MotionsLeft))
+        del AllAccels
 
-    SmallFingers =  Parallel(n_jobs=num_cores)(delayed(resizeImage)(FP) for FP in AllFingers)
-    del AllFingers
+        SmallFingers =  Parallel(n_jobs=num_cores)(delayed(resizeImage)(FP) for FP in AllFingers)
+        del AllFingers
 
-    count =  Parallel(n_jobs=num_cores)(delayed(saveImage)(SmallFingers[i], MetaData[i*3,3]) for i in range(MotionsLeft))
-    
+        count =  Parallel(n_jobs=num_cores)(delayed(saveImage)(SmallFingers[i], MetaData[i*3,3]) for i in range(MotionsLeft))
+    except:
+        print(MetaData[:,3])
+        count=0
+        
     return sum(count)
 
 GroupSize = NumberOfFiles

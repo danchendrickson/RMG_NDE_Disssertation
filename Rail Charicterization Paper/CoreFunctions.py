@@ -350,11 +350,15 @@ def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
     if levels is None:
         levels = len(coeffs)
     
+    if levels < dets_to_remove:
+        dets_to_remove = levels -1
+    
     for i in range(dets_to_remove):
         dets = np.asarray(coeffs[(levels-1)-i][1])
         dets[:] = 0
     
     filtered_signal = pywt.iswt(coeffs,wvt)
+    
     return filtered_signal
 
 def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
