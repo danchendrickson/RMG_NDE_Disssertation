@@ -166,7 +166,7 @@ def MakeImageFiles(files):
         count =  Parallel(n_jobs=num_cores)(delayed(saveImage)(SmallFingers[i], MetaData[i*3,3]) for i in range(MotionsLeft))
     except:
         print(MetaData[:,3])
-        count=0
+        count=[0,0]
         
     return sum(count)
 
