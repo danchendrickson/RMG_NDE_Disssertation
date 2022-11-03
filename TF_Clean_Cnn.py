@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 im_h = 250
 im_w = 1000
 
-run_name = 'TF_sym6Print'
+run_name = 'TF_sym6Coefs'
 
 batchSize = 6
 
@@ -39,7 +39,7 @@ model.compile(loss='binary_crossentropy',
 
 print('Big Data folders')
 
-imFolder = '/sciclone/scr10/dchendrickson01/sym6P/'
+imFolder = '/sciclone/scr10/dchendrickson01/sym6C/'
 
 # All images will be rescaled by 1./255
 generator = ImageDataGenerator(rescale=1./255, validation_split = 0.2)
