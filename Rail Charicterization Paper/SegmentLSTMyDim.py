@@ -215,12 +215,9 @@ def DeviationVelocity(file):
         pass
 
 # %%
-#files = fi2
-
-# %%
 # Maunally chooseing before and after tamping for same track
 
-files = ['230103 recording3.csv','230104 recording3.csv','230105 recording3.csv','230106 recording3.csv','230103 recording4.csv','230104 recording4.csv','230105 recording4.csv','230106 recording4.csv']
+files = ['230103 recording3.csv','230104 recording3.csv'] #,'230105 recording3.csv','230106 recording3.csv','230103 recording4.csv','230104 recording4.csv','230105 recording4.csv','230106 recording4.csv']
 
 # %%
 LoopFiles = 4
@@ -249,44 +246,6 @@ for k in range(loops):
     
     print(k, np.shape(Results), (ti()-st)/60.0)
     
-
-
-# %%
-#Cleaner=(np.linspace(0,1,len(Velocities[3])))*np.max(Velocities[3])
-#Velocities[3] /= Cleaner
-
-# %%
-f=2
-
-# %%
-fig, ax1 = plt.subplots(figsize=(6.67,3.75),dpi=800,linewidth=0.5) 
-
-PlotLength = min(len(SquelchSignal[f]), len(RawData[f]))
-v = SquelchSignal[f][:PlotLength]
-sd = RawData[f][:PlotLength]
-
-ax1.set_xlabel('Time') 
-ax1.set_ylabel('Squelch', color = 'red') 
-ax1.plot(range(PlotLength), v, color = 'red', linestyle = 'dashed', label='Velocity' )
-ax1.tick_params(axis ='y', labelcolor = 'red') 
-#plt.ylim(-6,6)
-legend_1 = ax1.legend(loc=2)
-legend_1.remove()
-
-# Adding Twin Axes
-
-ax2 = ax1.twinx() 
-
-ax2.set_ylabel('Y Signal', color = 'blue') 
-ax2.plot(range(PlotLength), sd, color = 'blue', label='Acceleration') 
-ax2.tick_params(axis ='y', labelcolor = 'blue') 
-#plt.ylim(0.0,0.6)
-ax2.legend(loc=1)
-ax2.add_artist(legend_1)
-# Show plot
-
-plt.show()
-
 # %%
 def SepreateMovements(SquelchSignal, RawData):
     Moves=[]
@@ -312,30 +271,30 @@ for Groups in Movements:
     for Move in Groups:
         Moves.append(Move)
 
-# %%
-MoveNum = 1007
-fig = plt.figure()
-plt.plot(Moves[MoveNum], label='y')
-
-plt.show()
 
 # %%
 Xmoves = []
 
 for move in Moves:
-    g = np.shape(move)[0]
+    try:
+        g = np.shape(move)[1]
+        op1 = True
+    except:
+        g = np.shape(move)[0]
+        op1 = False
     if g > 1000:
         ymove = []
         move = np.matrix(move)
         for i in range(g):
-            ymove.append(move[i,0])
+            if op1: 
+                ymove.append(move[0,i])
+            else:
+                try:
+                    ymove.append(move[i])
+                except:
+                    pass
         Xmoves.append(ymove)
 
-
-# %%
-fig = plt.figure()
-plt.plot(Xmoves[MoveNum], label='y')
-plt.show()
 
 # %%
 del SquelchSignal
@@ -356,15 +315,21 @@ for move in Xmoves2:
         Xmoves.append(move[:int(len(move)/2)])
         Xmoves.append(move[int(len(move)/2):])
     else:
-        Xmoves.append(move)
+        if len(move) < 100:
+            pass
+        else:
+            Xmoves.append(move)
         
+# %%
 del Xmoves2
 
 # %%
 maxLength = 0
+minLength = 9999
 for move in Xmoves:
     if len(move) > maxLength: maxLength = len(move)
-maxLength
+    if len(move) < minLength: minLength = len(move)
+print(minLength,maxLength)
 
 # %%
 SplitRatio = 0.9
@@ -373,7 +338,10 @@ Split
 
 # %%
 
+Xmoves[1][3255]
 
+
+#%%
 XMoveMatrix = np.zeros((len(Xmoves), maxLength),dtype=float)
 for i in range(len(Xmoves)):
     for j in range(len(Xmoves[i])):
@@ -441,6 +409,7 @@ class LSTM_Autoencoder:
     plt.title("Reconstruction Error")
     plt.plot(scores)
     plt.plot([threshold_score]*len(scores), c='r')
+    plt.savefig('AutoEncoderScoresY.png')
     plt.show()
     
     anomalous = np.where(scores > threshold_score)
@@ -449,12 +418,15 @@ class LSTM_Autoencoder:
     plt.title("Anomalies")
     plt.scatter(normal, timeseries[normal][:,-1], s=3)
     plt.scatter(anomalous, timeseries[anomalous][:,-1], s=5, c='r')
+    plt.savefig('AutoEncoderScoresY.png')
     plt.show()
     
+# %%
+
 lstm_autoencoder = LSTM_Autoencoder(optimizer='adam', loss='mse')
 history = lstm_autoencoder.fit(Train_data, epochs=3, batch_size=32)
 scores = lstm_autoencoder.predict(Test_data)
-lstm_autoencoder.plot(scores, Test_data, threshold=0.95,to_file='AutoEncoderScores&.png', dpi=300)
+lstm_autoencoder.plot(scores, Test_data, threshold=0.95,to_file='', dpi=300)
 
 lstm_autoencoder.save("LSTM_y")
 
