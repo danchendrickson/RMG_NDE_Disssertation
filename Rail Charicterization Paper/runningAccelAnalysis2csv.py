@@ -236,30 +236,30 @@ def DeviationVelocity(file):
         pass
 
 # %%
-import os
-import datetime as dt
+#import os
+#import datetime as dt
 
-fi2 = []
+#fi2 = []
 
-now = dt.datetime.now()
-ago = now-dt.timedelta(days=60) #last run 1/19
+#now = dt.datetime.now()
+#ago = now-dt.timedelta(days=60) #last run 1/19
 
-for root, dirs,files in os.walk(folder):  
-    for fname in files:
-        path = os.path.join(root, fname)
-        st = os.stat(path)    
-        mtime = dt.datetime.fromtimestamp(st.st_ctime)
-        if mtime > ago:
-            fi2.append(fname)
-
-# %%
-fi2
+#for root, dirs,files in os.walk(folder):  
+#    for fname in files:
+#        path = os.path.join(root, fname)
+#        st = os.stat(path)    
+#        mtime = dt.datetime.fromtimestamp(st.st_ctime)
+#        if mtime > ago:
+#            fi2.append(fname)
 
 # %%
-files = fi2
+#fi2
 
 # %%
-LoopFiles = 12
+#files = fi2
+
+# %%
+LoopFiles = 24
 loops = int(len(files) / LoopFiles) +1
 
 # %%
@@ -267,10 +267,10 @@ rootfolder
 
 # %%
 NeedHeader = True
-if os.path.exists(rootfolder + 'StdDevBySpeedSummaryStatistics.csv'):
+if os.path.exists(rootfolder + 'StdDevBySpeedSummaryStatistics2.csv'):
     NeedHeader=False
 
-WriteFile = open(rootfolder + 'StdDevBySpeedSummaryStatistics.csv','a')
+WriteFile = open(rootfolder + 'StdDevBySpeedSummaryStatistics.csv2','a')
 if NeedHeader:
     WriteFile.write('Year, Month, Day, Sensor, am, np.average(MovingDevX), np.average(StopedDevX), np.average(MovingDevY), np.average(StopedDevY), np.average(MovingDevY), np.average(StopedDevY), DevX0, DevX1, DevX2, DevX3, DevX4, DevX5p,DevY0, DevY1, DevY2, DevY3, DevY4, DevY5p,DevZ0, DevZ1, DevZ2, DevZ3, DevZ4, DevZ5p \n')
 
@@ -284,7 +284,8 @@ WriteFile
 st = ti()
 
 # %%
-for k in range(loops):
+for j in range(loops-8):
+    k = j + 9
     if k == loops -1:
         tfiles = files[k*LoopFiles:]
     else:
@@ -374,7 +375,7 @@ for k in range(loops):
     print(k, len(Results), st-ti())
 
     WriteFile.close()
-    WriteFile = open(rootfolder + 'StdDevBySpeedSummaryStatistics.csv','a')
+    WriteFile = open(rootfolder + 'StdDevBySpeedSummaryStatistics2.csv','a')
     
 
 WriteFile.close()
