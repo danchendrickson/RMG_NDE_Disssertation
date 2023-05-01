@@ -906,7 +906,7 @@ def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
     
     return np.asarray(PrintMatrix)
 
-def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title = ''):
+def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title = '', returnData = True):
     '''
         Makes a 3D thumbprint images from a 3D motion source.
         The XYZ components of Acceleration each are turned into a thumbprint
@@ -937,6 +937,9 @@ def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title 
         if len(title)> 1:
             cv2.imwrite(title + '.png', PrintMatrix)
 
-        return np.asarray(PrintMatrix)
+        if returnData:
+            return np.asarray(PrintMatrix)
+        else: 
+            pass
     except:
         pass

@@ -36,6 +36,17 @@ from time import time as ti
 import CoreFunctions as cf
 from skimage.restoration import denoise_wavelet
 
+# Imports
+#from keras.preprocessing import image
+import keras.utils as image
+from keras.applications.vgg16 import VGG16
+from keras.applications.vgg16 import preprocess_input
+import numpy as np
+from sklearn.cluster import KMeans
+import os, shutil, glob, os.path
+from PIL import Image as pil_image
+image.LOAD_TRUNCATED_IMAGES = True 
+model = VGG16(weights='imagenet', include_top=False)
 
 # %% [markdown]
 #  ## Choosing Platform
@@ -87,7 +98,28 @@ elif Computer =='PortLap':
     rootfolder = location 
     folder = rootfolder + 'Recordings2\\'
 
+# %% [markdown]
+# ## Set up variables
 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+# %%
+# Maunally chooseing before and after tamping for same track
+
+files = ['221206 recording1.csv','221207 recording1.csv','221208 recording1.csv','221209 recording1.csv',
+         '221206 recording2.csv','221207 recording2.csv','221208 recording2.csv','221209 recording2.csv',
+         '230418 recording1.csv','230419 recording1.csv','230420 recording1.csv','230421 recording1.csv',
+         '230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv']
+
+
+# %%
+ClustersWanted = 11
+scales= 100
+skips = 1
+minLength = 750
+
+    
 # %% [markdown]
 # ## Project Specific Functions
 
@@ -279,7 +311,8 @@ def MakeSpectrogramImages(data, title, something=300, nperseg = 512, novrelap=25
     plt.pcolormesh(t, f, Szz[0],cmap='gist_ncar')
     plt.savefig(imageFolder+'spec/'+title+'.png',bbox_inches='tight', pad_inches=0)
 
-
+    return 1
+    
 # %%
 def sortClusters(folder):
     sampleName = folder.split('/')[-2]
@@ -292,7 +325,7 @@ def sortClusters(folder):
     # Variables
     imdir = folder # DIR containing images
     targetdir =imageFolder+'wvltSort/'+sampleName+'/' # DIR to copy clustered images to
-    number_clusters = 7
+    number_clusters = ClustersWanted
 
     # Loop over files and get features
     filelist = glob.glob(os.path.join(imdir, '*.png'))
@@ -329,23 +362,6 @@ def sortClusters(folder):
             
     return 1
 
-# %% [markdown]
-# ## Set up variables
-
-# %%
-# Maunally chooseing before and after tamping for same track
-
-files = ['221206 recording1.csv','221207 recording1.csv','221208 recording1.csv','221209 recording1.csv',
-         '221206 recording2.csv','221207 recording2.csv','221208 recording2.csv','221209 recording2.csv',
-         '230418 recording1.csv','230419 recording1.csv','230420 recording1.csv','230421 recording1.csv',
-         '230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv']
-
-
-# %%
-ClustersWanted = 11
-scales= 100
-skips = 1
-minLength = 750
 
 # %% [markdown]
 # ## Process Files
@@ -453,17 +469,19 @@ for tri in trys:
     if os.path.exists(imageFolder+tri+'/') == False:
         os.mkdir(imageFolder+tri+'/')
 
-    FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[i].T, wvlt, scales, skips,imageFolder+tri + '/Move '+ MoveNames[i]) for i in range(len(Moves)))
+    FPimages = Parallel(n_jobs=37)(delayed(cf.makeMPFast)(Moves[i].T, wvlt, scales, skips,imageFolder+tri + '/Move '+ MoveNames[i], False) for i in range(len(Moves)))
 
 ##FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[MoveNum].T, tri, scales, skips, imageFolder+'wvltTest/' + tri + '_LongMove') for tri in trys)
 
+print('made it through wavelets')
 
 # %%
 if os.path.exists(imageFolder+'spec/') == False:
         os.mkdir(imageFolder+'spec/')
 
-FPimages = Parallel(n_jobs=60)(delayed(MakeSpectrogramImages)(Moves[i].T, 'Move '+ MoveNames[i], 300, 512, 505) for i in range(len(Moves)))
+FPimages = Parallel(n_jobs=37)(delayed(MakeSpectrogramImages)(Moves[i].T, 'Move '+ MoveNames[i], 300, 512, 505) for i in range(len(Moves)))
 
+print('Made it through spectragram')
 
 # %%
 del FPimages
