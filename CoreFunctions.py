@@ -886,15 +886,56 @@ def KalmanGroup(DataMatrix):
     
     return waveKalmaned
 
-def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1):
+def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title = '', returnData = True):
+    '''
+        Makes 3D wavelet spectragram images from a 3D motion source.
+        The XYZ components of Acceleration each are turned into a the scale values from the wavelet
+        and the wavelet scales images are then stored as the RBG colors for a single image.
 
+        Inputs:
+            DataMatrix: 3 arrays of XYZ components of a signal
+            wvt: The wavelet used to make the DWFP
+            sacales: number of scales to using in makig the wavelet
+            spacer: weather or not the scales are consecutive integers, or skip numbers
+            title: if a title is given, the image will be saved as a 
+                    png with that file name, if not given, not saved
+            returnDAta: if True will return the image matrix, if False, will not
+        Outputs:
+            array of 3 arrays that can be an 0-255 color depth image
+
+        Notes:
+            other getThumprint2 inputs are left at defaults, such as scales,
+            scale spacing, etc.
+    
+    '''
     xPrint = getScalesOnly(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)
     yPrint = getScalesOnly(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)
     zPrint = getScalesOnly(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)
-
-    PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
     
-    return np.asarray(PrintMatrix)
+    xPrint = xPrint.real
+    xPrint -= np.min(xPrint)
+    xPrint /= np.max(xPrint)
+    xPrint *= 255
+
+    yPrint = yPrint.real
+    yPrint -= np.min(yPrint)
+    yPrint /= np.max(yPrint)
+    yPrint *= 255
+
+    zPrint = zPrint.real
+    zPrint -= np.min(zPrint)
+    zPrint /= np.max(zPrint)
+    zPrint *= 255
+    
+    PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
+
+    if len(title)> 1:
+        cv2.imwrite(title + '.png', PrintMatrix)
+
+    if returnData:
+        return np.asarray(PrintMatrix)
+    else: 
+        pass
 
 def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
 
@@ -903,7 +944,7 @@ def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
     zPrint = getThumbprint(np.asarray(DataMatrix[2]).flatten(), wvt)*255
 
     PrintMatrix = np.dstack((xPrint.T,yPrint.T,zPrint.T))
-    
+                     
     return np.asarray(PrintMatrix)
 
 def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title = '', returnData = True):
