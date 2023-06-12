@@ -524,16 +524,46 @@ for j in range(J):
         sorting = Parallel(n_jobs=3)(delayed(sortClusters)(folder) for folder in folders[MaxSameTime * j:])
     print(str(j) + ' of ' + str(J))
 
-# %%
-del sorting
-
 # %% [markdown]
 # ## Now for comaprison of the results
 
 # %%
-
+def GetResultsDataFrame(folder):
+    files = os.listdir(folder)
+    if len(files) > 2:
+        TypeName = folder.split('/')[-2]
+        Results = []
+        for file in files:
+            Group = int(file.split('_')[0])
+            Move = file.split('_')[1][5:-4]
+            Results.append([Group,Move])
+        Results = np.matrix(Results)
+        temp_dict = {
+                "MoveName" : np.asarray(Results[:,1]).flatten(),
+                TypeName: np.asarray(Results[:,0]).flatten()
+            }
+        DataSet = pd.DataFrame(temp_dict)
+        return DataSet
 
 # %%
+#targetdir = imageFolder+'scaleSort/'
+targetdir = imageFolder+'wvltSort/'
 
+folders = glob.glob(targetdir+'*/')
 
+# %%
+RealReturns = False
+for folder in folders:
+    FolderDF = GetResultsDataFrame(folder)
+    #print(folder.split('/')[-2], len(FolderDF))
+    if len(FolderDF) > 2:
+        if RealReturns == True:
+            AllData = pd.merge(AllData, FolderDF, on ='MoveName', how ="outer")
+        else:
+            AllData = FolderDF
+            RealReturns = True
+
+# %%
+AllData.to_csv('WvltResults.csv')
+#AllData.to_csv('ScalesResults.csv')
 
