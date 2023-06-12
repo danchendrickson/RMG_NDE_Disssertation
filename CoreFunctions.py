@@ -930,7 +930,7 @@ def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, 
     zPrint /= np.max(zPrint)
     zPrint *= 255'''
     
-    PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
+    PrintMatrix = np.asarray(np.dstack((xPrint,yPrint,zPrint)))
 
     if len(title)> 1:
         cv2.imwrite(title + '.png', PrintMatrix)
