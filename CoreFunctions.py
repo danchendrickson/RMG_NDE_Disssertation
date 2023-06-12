@@ -908,11 +908,14 @@ def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, 
             scale spacing, etc.
     
     '''
-    xPrint = getScalesOnly(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)
-    yPrint = getScalesOnly(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)
-    zPrint = getScalesOnly(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)
+    try:
+        xPrint = getScalesOnly(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)
+        yPrint = getScalesOnly(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)
+        zPrint = getScalesOnly(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)
+    except:
+        print(wvt, title)
     
-    xPrint = xPrint.real
+    '''xPrint = xPrint.real
     xPrint -= np.min(xPrint)
     xPrint /= np.max(xPrint)
     xPrint *= 255
@@ -925,7 +928,7 @@ def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, 
     zPrint = zPrint.real
     zPrint -= np.min(zPrint)
     zPrint /= np.max(zPrint)
-    zPrint *= 255
+    zPrint *= 255'''
     
     PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
 
