@@ -35,7 +35,7 @@ from time import time as ti
 # %%
 import CoreFunctions as cf
 from skimage.restoration import denoise_wavelet
-
+import pandas as pd
 
 # %%
 # ML Imports Imports
@@ -492,15 +492,15 @@ StorageFolder = imageFolder + 'scaleTest/'
 f = 0
 
 #wvlt = 'beta'
-
+'''
 for tri in trys:
 
     if os.path.exists(StorageFolder+tri+'/') == False:
         os.mkdir(StorageFolder+tri+'/')
 
-    #FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[i].T, wvlt, scales, skips,StorageFolder+tri + '/Move '+ MoveNames[i]) for i in range(len(Moves)))
-    FPimages = Parallel(n_jobs=60)(delayed(cf.makeMatrixImages)(Moves[i].T, wvlt, scales, skips,StorageFolder+tri + '/Move '+ MoveNames[i]) for i in range(len(Moves)))
-##FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[MoveNum].T, tri, scales, skips, imageFolder+'wvltTest/' + tri + '_LongMove') for tri in trys)
+    #FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[i].T, tri, scales, skips,StorageFolder+tri + '/Move '+ MoveNames[i]) for i in range(len(Moves)))
+    FPimages = Parallel(n_jobs=60)(delayed(cf.makeMatrixImages)(Moves[i].T, tri, scales, skips,StorageFolder+tri + '/Move '+ MoveNames[i]) for i in range(len(Moves)))
+##FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[MoveNum].T, tri, scales, skips, StorageFolder+'wvltTest/' + tri + '_LongMove') for tri in trys)
 
 
 # %%
@@ -513,13 +513,14 @@ FPimages = Parallel(n_jobs=60)(delayed(MakeSpectrogramImages)(Moves[i].T, 'Move 
 # %%
 del FPimages
 del Moves
-
+'''
 
 # %% [markdown]
 # ## Started the Unsupervised Clustering
 
 # %%
 folders = glob.glob(StorageFolder + '*/')
+print(len(folders), StorageFolder)
 
 # %%
 MaxSameTime = 2

@@ -91,7 +91,7 @@ PlotDPI = 120
 
 beta_a = 2
 beta_b = 5
-beta_cycles = 4
+beta_cycles = 3
 beta_sineCosine = 1
 WaveletToUse = 'beta'
 #scales = np.linspace(0,2000,1001, dtype=int)
@@ -114,9 +114,9 @@ def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCy
         j = i / sizes
         beta[i] = st.beta.pdf(j,a,b)
         if sineCycle == 0:
-            beWave[i] = beta[i] * math.cos(j*math.pi*cosineCycle)
+            beWave[i] = np.fliplr(beta[i] * math.cos(j*math.pi*cosineCycle))
         else:
-            beWave[i] = beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle)
+            beWave[i] = np.fliplr(beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle))
         x[i]=j
         
     #beWav2 = beWave[::-1]
@@ -868,9 +868,9 @@ def getScalesOnly(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, plot=F
     maxs = np.max(cfX)
     cfX -= mins
     cfX *= 1/(maxs-mins)
-    cfX *= 255
+    cfX *= 256
 
-    return cfX
+    return cfX.astype(int)
 
 def KalmanGroup(DataMatrix):
     waveKalmaned = np.asarray([],dtype=object)
@@ -914,6 +914,9 @@ def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, 
         zPrint = getScalesOnly(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)
     except:
         print(wvt, title)
+        xPrint = np.zeros((len(DataMatrix[0].flatten()),scales))
+        yPrint = np.zeros((len(DataMatrix[0].flatten()),scales))
+        zPrint = np.zeros((len(DataMatrix[0].flatten()),scales))
     
     '''xPrint = xPrint.real
     xPrint -= np.min(xPrint)
@@ -930,7 +933,7 @@ def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, 
     zPrint /= np.max(zPrint)
     zPrint *= 255'''
     
-    PrintMatrix = np.asarray(np.dstack((xPrint,yPrint,zPrint)))
+    PrintMatrix = np.dstack((np.asarray(xPrint),np.asarray(yPrint),np.asarray(zPrint)))
 
     if len(title)> 1:
         cv2.imwrite(title + '.png', PrintMatrix)

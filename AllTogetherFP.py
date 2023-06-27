@@ -30,7 +30,7 @@ from joblib import Parallel, delayed
 import platform
 
 from time import time as ti
-
+import pandas as pd
 
 # %%
 import CoreFunctions as cf
@@ -322,11 +322,11 @@ def MakeSpectrogramImages(data, title, something=300, nperseg = 512, novrelap=25
     ax = plt.axes()
     ax.set_axis_off()
     plt.pcolormesh(t, f, Szz[0],cmap='gist_ncar')
-    plt.savefig(imageFolder+'spec/'+title+'.png',bbox_inches='tight', pad_inches=0)
+    plt.savefig(title+'.png',bbox_inches='tight', pad_inches=0)
 
 
 # %%
-def sortClusters(folder):
+def sortClusters(imdir):
     
     filelist = glob.glob(os.path.join(imdir, '*.png'))
     filelist.sort()
@@ -474,9 +474,9 @@ trys.append('beta')
 # %%
 Moves, MoveNames = splitLong(Moves, longMove+1, minLength, MoveNames)
 
-
 # %%
-imageFolder += 'wvltTest/'
+#imageFolder += 'wvltTest/'
+imgFolder = imageFolder + 'wvltTest/'
 
 # %%
 f = 0
@@ -485,19 +485,19 @@ f = 0
 
 for tri in trys:
 
-    if os.path.exists(imageFolder+tri+'/') == False:
-        os.mkdir(imageFolder+tri+'/')
+    if os.path.exists(imgFolder+tri+'/') == False:
+        os.mkdir(imgFolder+tri+'/')
 
-    FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[i].T, wvlt, scales, skips,imageFolder+tri + '/Move '+ MoveNames[i]) for i in range(len(Moves)))
+    FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[i].T, wvlt, scales, skips, imgFolder+tri + '/Move '+ MoveNames[i]) for i in range(len(Moves)))
 
-##FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[MoveNum].T, tri, scales, skips, imageFolder+'wvltTest/' + tri + '_LongMove') for tri in trys)
+##FPimages = Parallel(n_jobs=60)(delayed(cf.makeMPFast)(Moves[MoveNum].T, tri, scales, skips, imgFolder+'wvltTest/' + tri + '_LongMove') for tri in trys)
 
 
 # %%
-if os.path.exists(imageFolder+'spec/') == False:
-        os.mkdir(imageFolder+'spec/')
+if os.path.exists(imgFolder+'spec/') == False:
+        os.mkdir(imgFolder+'spec/')
 
-FPimages = Parallel(n_jobs=60)(delayed(MakeSpectrogramImages)(Moves[i].T, 'Move '+ MoveNames[i], 300, 512, 505) for i in range(len(Moves)))
+FPimages = Parallel(n_jobs=60)(delayed(MakeSpectrogramImages)(Moves[i].T, imgFolder+'spec/Move '+ MoveNames[i], 300, 512, 505) for i in range(len(Moves)))
 
 
 # %%
@@ -509,10 +509,10 @@ del Moves
 # ## Started the Unsupervised Clustering
 
 # %%
-folders = glob.glob(imageFolder + 'wvltTest/*/')
+folders = glob.glob(imgFolder+ '/*/')
 
 # %%
-MaxSameTime = 2
+MaxSameTime = 3
 J = int(len(folders) / MaxSameTime)
 if len(folders) % MaxSameTime != 0:
     J +=1
