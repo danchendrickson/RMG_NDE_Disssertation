@@ -114,13 +114,13 @@ def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCy
         j = i / sizes
         beta[i] = st.beta.pdf(j,a,b)
         if sineCycle == 0:
-            beWave[i] = np.fliplr(beta[i] * math.cos(j*math.pi*cosineCycle))
+            beWave[i] = beta[i] * math.cos(j*math.pi*cosineCycle)
         else:
-            beWave[i] = np.fliplr(beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle))
+            beWave[i] = beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle)
         x[i]=j
         
-    #beWav2 = beWave[::-1]
-    return beWave, x
+    beWav2 = beWave[::-1]
+    return beWav2, x
 
 def cwt_fixed(data, scales, wavelet, scalespace =1, sampling_period=1., betaParameters = [10000, beta_a,  beta_b, beta_cycles, 0]):
     """
@@ -974,19 +974,19 @@ def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title 
             scale spacing, etc.
     
     '''
-    try:
-        xPrint = getThumbprint2(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)*255
-        yPrint = getThumbprint2(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)*255
-        zPrint = getThumbprint2(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)*255
+    #try:
+    xPrint = getThumbprint2(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)*255
+    yPrint = getThumbprint2(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)*255
+    zPrint = getThumbprint2(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)*255
 
-        PrintMatrix = np.dstack((np.asarray(xPrint.T),np.asarray(yPrint.T),np.asarray(zPrint.T)))
+    PrintMatrix = np.dstack((np.asarray(xPrint.T),np.asarray(yPrint.T),np.asarray(zPrint.T)))
 
-        if len(title)> 1:
-            cv2.imwrite(title + '.png', PrintMatrix)
+    if len(title)> 1:
+        cv2.imwrite(title + '.png', PrintMatrix)
 
-        if returnData:
-            return np.asarray(PrintMatrix)
-        else: 
-            pass
-    except:
+    if returnData:
+        return np.asarray(PrintMatrix)
+    else: 
         pass
+    #except:
+    #    pass
