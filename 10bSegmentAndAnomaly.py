@@ -109,8 +109,8 @@ f = 0
 
 
 # %%
-files = ['230418 recording1.csv','230419 recording1.csv','230420 recording1.csv'] #,'230421 recording1.csv',
-#         '230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv']
+files = ['230418 recording1.csv','230419 recording1.csv','230420 recording1.csv','230421 recording1.csv',
+         '230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv']
 
 # %%
 BeforeTamping = ['221206 recording1.csv','221207 recording1.csv','221208 recording1.csv','221209 recording1.csv',
@@ -323,11 +323,11 @@ for k in range(loops):
         tfiles = files[k*LoopFiles:]
     else:
         tfiles = files[k*LoopFiles:(k+1)*LoopFiles]
-    #Results = Parallel(n_jobs=LoopFiles)(delayed(DeviationVelocity)(file) for file in tfiles)
-    Results =[]
-    for file in tfiles:
-        Results.append(DeviationVelocity(file))
-        print(file, (ti()-st)/60.0)
+    Results = Parallel(n_jobs=LoopFiles)(delayed(DeviationVelocity)(file) for file in tfiles)
+    #Results =[]
+    #for file in tfiles:
+    #    Results.append(DeviationVelocity(file))
+    #    print(file, (ti()-st)/60.0)
         
     for i in range(len(Results)):       
         SquelchSignal.append(Results[i][0])
@@ -395,20 +395,70 @@ Moves, MoveNames = splitLong(Moves, longMove+1, minLength, MoveNames)
 np.shape(Moves[0])
 
 # %%
-Moves2 = []
-for move in Moves:
-    if np.shape(move)[0] < longMove:
-        padding = np.zeros((longMove-np.shape(move)[0], 3))
-        tempMove = np.concatenate((move, padding), axis=0)
-        Moves2.append(tempMove)
-    else:
-        Moves2.append(move)
-Moves = Moves2
+#padding moves.  Not needed, need sequences, not moves
 
-del Moves2
+#Moves2 = []
+#for move in Moves:
+#    if np.shape(move)[0] < longMove:
+#        padding = np.zeros((longMove-np.shape(move)[0], 3))
+#        tempMove = np.concatenate((move, padding), axis=0)
+#        Moves2.append(tempMove)
+#    else:
+#        Moves2.append(move)
+#Moves = Moves2
+
+#del Moves2
 
 # %% [markdown]
 # ## Try LSTM Stuff
+
+# %% [markdown]
+# https://machinelearningmastery.com/how-to-develop-lstm-models-for-time-series-forecasting/
+
+# %%
+TimeSteps = 100
+Features = np.shape(Moves[0])[1]
+
+# %%
+# split a multivariate sequence into samples
+def split_sequences(sequences, n_steps):
+    X, y = list(), list()
+    for i in range(len(sequences)):
+        # find the end of this pattern
+        end_ix = i + n_steps
+        # check if we are beyond the dataset
+        if end_ix > len(sequences)-1:
+            break
+        # gather input and output parts of the pattern
+        seq_x, seq_y = sequences[i:end_ix, :], sequences[end_ix, :]
+        X.append(seq_x)
+        y.append(seq_y)
+    return np.array(X), np.array(y)
+
+# %%
+Sequences = []
+Outputs = []
+for move in Moves:
+    Seq, Out = split_sequences(move,TimeSteps)
+    Sequences.append(Seq)
+    Outputs.append(Out)
+    
+
+# %%
+MoveSegments = []
+for seq in Sequences:
+    for mv in seq:
+        MoveSegments.append(mv)
+NextDataPoint = []
+for out in Outputs:
+    for pt in out:
+        NextDataPoint.append(pt)
+
+# %%
+np.shape(NextDataPoint)
+
+# %%
+from sklearn.model_selection import train_test_split
 
 # %%
 from keras.layers import LSTM, Dense, RepeatVector, TimeDistributed, Masking
@@ -420,8 +470,8 @@ class LSTM_Autoencoder:
   def __init__(self, optimizer='adam', loss='mse'):
     self.optimizer = optimizer
     self.loss = loss
-    self.n_features = 3
-    self.timesteps = longMove
+    self.n_features = Features
+    self.timesteps = TimeSteps
     
   def build_model(self):
     timesteps = self.timesteps
@@ -433,13 +483,13 @@ class LSTM_Autoencoder:
 
     # Encoder
     model.add(LSTM(timesteps, activation='relu', input_shape=(timesteps, n_features), return_sequences=True))
-    model.add(LSTM(16, activation='relu', return_sequences=True))
-    model.add(LSTM(1, activation='relu'))
+    model.add(LSTM(50, activation='relu', return_sequences=True))
+    model.add(LSTM(8, activation='relu'))
     model.add(RepeatVector(timesteps))
     
     # Decoder
     model.add(LSTM(timesteps, activation='relu', return_sequences=True))
-    model.add(LSTM(16, activation='relu', return_sequences=True))
+    model.add(LSTM(50, activation='relu', return_sequences=True))
     model.add(TimeDistributed(Dense(n_features)))
     
     model.compile(optimizer=self.optimizer, loss=self.loss)
@@ -454,7 +504,7 @@ class LSTM_Autoencoder:
     self.model.fit(X, X, epochs=epochs, batch_size=batch_size)
     
   def predict(self, X):
-    input_X = np.expand_dims(X, axis=1)
+    #input_X = np.expand_dims(X, axis=1)
     output_X = self.model.predict(input_X)
     reconstruction = np.squeeze(output_X)
     return np.linalg.norm(X - reconstruction, axis=-1)
@@ -478,25 +528,28 @@ class LSTM_Autoencoder:
 
 
 # %%
-split = int(len(Moves)*.9)
-
+#split = int(len(Moves)*.9)
+#Train_data = Moves[:split]
+#Test_data = Moves[split:]
+#Train_data = tf.ragged.constant(Train_data)
+#Test_data = tf.ragged.constant(Test_data)
 
 # %%
-Train_data = Moves[:split]
-Test_data = Moves[split:]
-
-# %%
-Train_data = tf.ragged.constant(Train_data)
-
+seq_train, seq_test, out_train, out_test = train_test_split(MoveSegments, NextDataPoint, test_size=0.05, shuffle=True, random_state=0)
 
 # %%
 lstm_autoencoder = LSTM_Autoencoder(optimizer='adam', loss='mse')
 
 # %%
-lstm_autoencoder.fit(Train_data, epochs=3, batch_size=32)
+lstm_autoencoder.fit(seq_train, epochs=10, batch_size=32)
+
+# %%
+np.shape(Train_data[1])
 
 # %%
 scores = lstm_autoencoder.predict(Test_data)
+
+# %%
 lstm_autoencoder.plot(scores, Test_data, threshold=0.95)
 
 # %%
