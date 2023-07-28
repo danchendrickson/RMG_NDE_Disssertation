@@ -123,32 +123,19 @@ matplotlib.rcParams.update({'font.size': 17})
 
 # %%
 def train_test_split(t, y, split = 0.8):
-
-  '''
-  
-  split time series into train/test sets
-  
-  : param t:                      time array
-  : para y:                       feature array
-  : para split:                   percent of data to include in training set 
-  : return t_train, y_train:      time/feature training and test sets;  
-  :        t_test, y_test:        (shape: [# samples, 1])
-  
-  '''
-  
-  indx_split = int(split * len(y))
-  indx_train = np.arange(0, indx_split)
-  indx_test = np.arange(indx_split, len(y))
-  
-  t_train = t[indx_train]
-  y_train = y[indx_train]
-  y_train = y_train.reshape(-1, 1)
-  
-  t_test = t[indx_test]
-  y_test = y[indx_test]
-  y_test = y_test.reshape(-1, 1)
-  
-  return t_train, y_train, t_test, y_test 
+    indx_split = int(split * len(y))
+    indx_train = np.arange(0, indx_split)
+    indx_test = np.arange(indx_split, len(y))
+    
+    t_train = t[indx_train]
+    y_train = y[indx_train]
+    y_train = y_train.reshape(-1, 1)
+    
+    t_test = t[indx_test]
+    y_test = y[indx_test]
+    y_test = y_test.reshape(-1, 1)
+    
+    return t_train, y_train, t_test, y_test 
 
 # %%
 def windowed_dataset(y, input_window = 5, output_window = 1, stride = 1, num_features = 1):
@@ -215,7 +202,10 @@ def SmoothMoves(file):
     SmoothX -= np.average(SmoothX)
     Time = []
     for r in ODataSet:
-        t = int(r[1][:2])*3600 + int(r[1][2:4])*60+int(r[1][4:])+float(r[2])/10000.0
+        hr = int(r[1]/10000)
+        mint = int((r[1]-10000*hr)/100)
+        sec = r[1] % 100
+        t = hr * 3600 + mint * 60 + sec + r[2]/10000.0
         Time.append(t)
     #SmoothY -= np.average(SmoothY)
     #SmoothZ -= np.average(SmoothZ)
@@ -225,8 +215,8 @@ def SmoothMoves(file):
 # %%
 #----------------------------------------------------------------------------------------------------------------
 # generate dataset for LSTM
-t, y = SmoothMoves('/sciclone/scr10/dchendrickson01/Recordings2/230418 recording1.csv')
-
+t, y = SmoothMoves('230418 recording1.csv')
+print('Data Loaded')
 # %%
 t_train, y_train, t_test, y_test = train_test_split(t, y, split = 0.8)
 
