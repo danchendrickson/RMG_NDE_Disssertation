@@ -237,10 +237,6 @@ iw = 90
 ow = 10 
 s = 5
 
-Xtrain = np.zeros(iw)
-Ytrain = np.zeros(ow)
-Xtest = np.zeros(iw)
-Ytest = np.zeros(ow)
 
 # %%
 #----------------------------------------------------------------------------------------------------------------
@@ -248,8 +244,8 @@ Ytest = np.zeros(ow)
 files = ['230418 recording1.csv','230419 recording1.csv'] #,'230420 recording1.csv','230421 recording1.csv',
          #'230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv']
 
-for file in files:
-    y, t = SmoothMoves(files)
+for i in range(len(files)):
+    y, t = SmoothMoves(files[i])
 
     t_train, y_train, t_test, y_test = train_test_split(t, y, split = 0.8)
 
@@ -257,10 +253,16 @@ for file in files:
     XTrain, YTrain= windowed_dataset(y_train, input_window = iw, output_window = ow, stride = s)
     XTest, YTest = windowed_dataset(y_test, input_window = iw, output_window = ow, stride = s)
 
-    Xtrain = np.concatenate((Xtrain, XTrain), axis = 1)
-    Ytrain = np.concatenate((Ytrain, YTrain), axis = 1)
-    Xtest = np.concatenate((Xtest, XTest), axis = 1)
-    Ytest = np.concatenate((Ytest, YTest), axis = 1)
+    if i == 0:
+        Xtrain = XTrain
+        Ytrain = YTrain
+        Xtest = XTest
+        Ytest = YTest
+    else:
+        Xtrain = np.concatenate((Xtrain, XTrain), axis = 1)
+        Ytrain = np.concatenate((Ytrain, YTrain), axis = 1)
+        Xtest = np.concatenate((Xtest, XTest), axis = 1)
+        Ytest = np.concatenate((Ytest, YTest), axis = 1)
 
 # %%
 
@@ -291,3 +293,5 @@ torch.save(model, "PyTorch_LSTM_xyz")
 
 
 
+
+# %%
