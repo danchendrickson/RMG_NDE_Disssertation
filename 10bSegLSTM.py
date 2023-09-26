@@ -68,7 +68,7 @@ else:
 
 # %%
 if Computer == "SciClone":
-    location = '/sciclone/home20/dchendrickson01/image/'
+    location = '/sciclone/home/dchendrickson01/image/'
 elif Computer == "WinLap":
     location = 'C:\\Data\\'
 elif Computer == "Desktop":
@@ -80,9 +80,9 @@ elif Computer == 'PortLap':
 
 # %%
 if Computer ==  "SciClone":
-    rootfolder = '/sciclone/home20/dchendrickson01/'
-    folder = '/sciclone/scr10/dchendrickson01/Recordings2/'
-    imageFolder = '/sciclone/scr10/dchendrickson01/Move3Dprint/'
+    rootfolder = '/sciclone/home/dchendrickson01/'
+    folder = '/scratch/Recordings2/'
+    imageFolder = '/scratch/Move3Dprint/'
 elif Computer == "Desktop":
     rootfolder = location
     folder = rootfolder + "Recordings2\\"
@@ -110,7 +110,9 @@ f = 0
 
 # %%
 files = ['230418 recording1.csv','230419 recording1.csv','230420 recording1.csv','230421 recording1.csv',
-         '230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv']
+         '230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv',
+         '230425 recording1.csv','230425 recording2.csv','230426 recording2.csv','230427 recording2.csv',
+         '230428 recording2.csv','230509 recording1.csv','230510 recording1.csv','230511 recording1.csv']
 
 # %%
 BeforeTamping = ['221206 recording1.csv','221207 recording1.csv','221208 recording1.csv','221209 recording1.csv',
@@ -302,7 +304,7 @@ def findMinLength(Moves):
 # ## Process Files
 
 # %%
-LoopFiles = 3
+LoopFiles = 16
 loops = int(len(files) / LoopFiles) 
 if len(files)%LoopFiles != 0:
     loops += 1
@@ -339,7 +341,7 @@ for k in range(loops):
 
 
 # %%
-np.shape(RawData[0])
+print('got data', np.shape(RawData[0]))
 
 # %%
 #MoveData = Parallel(n_jobs=31)(delayed(SepreateMovements)(SquelchSignal[i], RawData[i], OrderedFileNames[i])
@@ -371,6 +373,7 @@ for Groups in GroupNames:
         MoveNames.append(name)
 
 # %%
+print('made moves')
 
 del SquelchSignal
 del RawData
@@ -416,7 +419,7 @@ np.shape(Moves[0])
 # https://machinelearningmastery.com/how-to-develop-lstm-models-for-time-series-forecasting/
 
 # %%
-TimeSteps = 100
+TimeSteps = 300
 Features = np.shape(Moves[0])[1]
 
 # %%
@@ -455,6 +458,7 @@ for out in Outputs:
         NextDataPoint.append(pt)
 
 # %%
+print('data split')
 np.shape(NextDataPoint)
 
 # %%
@@ -462,8 +466,15 @@ from sklearn.model_selection import train_test_split
 
 # %%
 from keras.layers import LSTM, Dense, RepeatVector, TimeDistributed, Masking
+from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
 import tensorflow as tf
+
+#gpus = tf.config.list_physical_devices('GPU')
+#tf.config.set_visible_devices(gpus[:4], 'GPU')
+
+tf.get_logger().setLevel('INFO')
+tf.autograph.set_verbosity(1)
 
 
 class LSTM_Autoencoder:
@@ -476,32 +487,36 @@ class LSTM_Autoencoder:
   def build_model(self):
     timesteps = self.timesteps
     n_features = self.n_features
-    model = Sequential()
+    tf.debugging.set_log_device_placement(True)
+    gpus = tf.config.list_logical_devices('GPU')
+    strategy = tf.distribute.MirroredStrategy(gpus)
+    with strategy.scope():
+        model = Sequential()
     
     # Padding
     #model.add(Masking(mask_value=0.0, input_shape=(timesteps, n_features)))
 
     # Encoder
-    model.add(LSTM(timesteps, activation='relu', input_shape=(timesteps, n_features), return_sequences=True))
-    model.add(LSTM(50, activation='relu', return_sequences=True))
-    model.add(LSTM(8, activation='relu'))
-    model.add(RepeatVector(timesteps))
-    
-    # Decoder
-    model.add(LSTM(timesteps, activation='relu', return_sequences=True))
-    model.add(LSTM(50, activation='relu', return_sequences=True))
-    model.add(TimeDistributed(Dense(n_features)))
-    
-    model.compile(optimizer=self.optimizer, loss=self.loss)
-    model.summary()
+        model.add(LSTM(timesteps, activation='relu', input_shape=(timesteps, n_features), return_sequences=True))
+        model.add(LSTM(75, activation='relu', return_sequences=True))
+        model.add(LSTM(8, activation='relu'))
+        model.add(RepeatVector(timesteps))
+
+        # Decoder
+        model.add(LSTM(timesteps, activation='relu', return_sequences=True))
+        model.add(LSTM(75, activation='relu', return_sequences=True))
+        model.add(TimeDistributed(Dense(n_features)))
+
+        model.compile(optimizer=self.optimizer, loss=self.loss)
+        model.summary()
     self.model = model
     
-  def fit(self, X, epochs=3, batch_size=32):
+  def fit(self, X, epochs=3, batch_size=32, callbacks = []):
     #self.timesteps = np.shape(X)[0]
     self.build_model()
     
     #input_X = np.expand_dims(X, axis=1)
-    self.model.fit(X, X, epochs=epochs, batch_size=batch_size)
+    self.model.fit(X, X, epochs=epochs, batch_size=batch_size, callbacks=callbacks,verbose=0)
     
   def predict(self, X):
     #input_X = np.expand_dims(X, axis=1)
@@ -520,7 +535,7 @@ class LSTM_Autoencoder:
     
     anomalous = np.where(scores > threshold_score)
     normal = np.where(scores <= threshold_score)
-    
+     
     plt.title("Anomalies")
     plt.scatter(normal, timeseries[normal][:,-1], s=3)
     plt.scatter(anomalous, timeseries[anomalous][:,-1], s=5, c='r')
@@ -538,10 +553,28 @@ class LSTM_Autoencoder:
 seq_train, seq_test, out_train, out_test = train_test_split(MoveSegments, NextDataPoint, test_size=0.05, shuffle=True, random_state=0)
 
 # %%
+import dask.dataframe as dd
+
+seq_train = dd.from_pandas(seq_train)
+
+# %%
 lstm_autoencoder = LSTM_Autoencoder(optimizer='adam', loss='mse')
 
 # %%
-lstm_autoencoder.fit(seq_train, epochs=10, batch_size=32)
+print('About to start Training')
+
+# define the checkpoint
+filepath = "model.h5"
+checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
+callback_list = [checkpoint]
+
+lstm_autoencoder.fit(seq_train, epochs=5, batch_size=32, callbacks=callback_list)
+
+print('about to save')
+
+lstm_autoencoder.model.save("LSTM_eclipse")
+
+
 
 # %%
 np.shape(Train_data[1])
@@ -554,7 +587,7 @@ lstm_autoencoder.plot(scores, Test_data, threshold=0.95)
 
 # %%
 
-lstm_autoencoder.model.save("LSTM_xyz")
+
 
 # %%
 

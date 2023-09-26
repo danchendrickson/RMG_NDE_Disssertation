@@ -17,7 +17,7 @@ import datetime
 from itertools import compress
 
 import os
-import cv2
+#import cv2
 
 import multiprocessing
 from joblib import Parallel, delayed
@@ -47,7 +47,7 @@ else:
     Computer = "WinLap"
 
 if Computer == "SciClone":
-    location = '/sciclone/home20/dchendrickson01/image/'
+    location = '~/image/'
 elif Computer == "WinLap":
     location = 'C:\\Data\\'
 elif Computer == "Desktop":
@@ -60,9 +60,9 @@ elif Computer == 'PortLap':
 
 
 if Computer ==  "SciClone":
-    rootfolder = '/sciclone/home20/dchendrickson01/'
+    rootfolder = '/sciclone/home/dchendrickson01/'
     if dataSize == 'big':
-        folder = '/sciclone/scr10/dchendrickson01/CraneData/'
+        folder = '/scratch/CraneData/'
     else:
         folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
 elif Computer == "Desktop":
