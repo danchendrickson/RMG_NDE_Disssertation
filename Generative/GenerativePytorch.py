@@ -1,3 +1,5 @@
+# madeto match GenerativePrediction Jupyter as of 10/4
+
 #Standard Header used on the projects
 
 #first the major packages used for math and graphing
@@ -50,7 +52,6 @@ import numpy as np
 from cycler import cycler
 import scipy.special as sp
 import matplotlib.pyplot as plt
-
 
 #Custome graph format style sheet
 #plt.style.use('Prospectus.mplstyle')
@@ -134,7 +135,7 @@ elif Computer == "LinLap":
 elif Computer =='PortLap':
     rootfolder = location 
     folder = rootfolder + 'Recordings2\\'
-
+    
 Saving = False
 location = folder
 Titles = True
@@ -144,8 +145,8 @@ f = 0
 freq = "2s"
 prediction_length=50
 
-files = ['230418 recording1.csv','230419 recording1.csv','230420 recording1.csv','230421 recording1.csv',
-         '230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv']
+files = ['230418 recording1.csv']#,'230419 recording1.csv']#,'230420 recording1.csv','230421 recording1.csv']#,
+#         '230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv']
 
 def RollingStdDev(RawData, SmoothData, RollSize = 25):
     StdDevs = []
@@ -303,16 +304,21 @@ from gluonts.evaluation import make_evaluation_predictions, Evaluator
 
 def train_and_predict(dataset, estimator):
     predictor = estimator.train(dataset)
+    print('pridictor made')
     forecast_it, ts_it = make_evaluation_predictions(
         dataset=dataset, predictor=predictor
     )
+    print('predictions made')
     evaluator = Evaluator(quantiles=(np.arange(20) / 20.0)[1:])
+    print('evaluator made')
     agg_metrics, item_metrics = evaluator(ts_it, forecast_it, num_series=len(dataset))
+    print('evaluator ran')
     return agg_metrics["MSE"]
 
 estimator = DeepAREstimator(
     freq=freq, prediction_length=prediction_length
 )
+
 
 print('Model set up')
 
@@ -328,7 +334,7 @@ ds = PandasDataset.from_long_dataframe(
     #timestamp="timestamps",
     freq="ns",
 )
-
+print('Starting Training')
 train_and_predict(ds, estimator)
 
-torch.save(estimator.state_dict(), 'GenTorch')
+torch.save(estimator.state_dict(), 'TorchGen')
