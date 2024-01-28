@@ -17,7 +17,7 @@ import datetime
 from itertools import compress
 
 import os
-import cv2
+#import cv2
 
 import multiprocessing
 from joblib import Parallel, delayed
@@ -100,10 +100,10 @@ spacer = 10
 
 num_cores = multiprocessing.cpu_count() -1
 
-SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
-OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
-OutputTitles = OutputVectors[0,:]
-OutputVectors = OutputVectors[1:,:]
+#SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
+#OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
+#OutputTitles = OutputVectors[0,:]
+#OutputVectors = OutputVectors[1:,:]
 
 
 def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCycle = 0):
@@ -474,7 +474,7 @@ def RidgeCount(fingerprint):
     
     return ridgeCount
 
-def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving, Show = True):
+def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving, Show = True, Pdpi =PlotDPI ):
     '''
     Makes an image of a fingerprint based on the Input data.  Does not calculate fingerprint with this funciton
     This functions takes the output of one of the makeFingerprint functions
@@ -509,7 +509,7 @@ def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving, Show
 
     
 
-    fig1 = plt.figure(figsize=(PlotWidthIn,PlotHeightIn),dpi=PlotDPI)
+    fig1 = plt.figure(figsize=(PlotWidthIn,PlotHeightIn),dpi=Pdpi)
     ax1 = plt.axes()
     if trim == 0:
         cs1 = ax1.contourf(Al,Ms, data[:,:],cmap=my_cmap,levels=slices)
