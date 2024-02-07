@@ -87,7 +87,7 @@ plt.rc('axes', prop_cycle=default_cycler)
 my_cmap = plt.get_cmap('gray')
 PlotWidthIn = 11
 PlotHeightIn = 3.75
-PlotDPI = 120
+PlotDPI = 3000
 
 beta_a = 2
 beta_b = 5
@@ -474,7 +474,7 @@ def RidgeCount(fingerprint):
     
     return ridgeCount
 
-def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving, Show = True, Pdpi =PlotDPI ):
+def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving, Show = True, Pdpi =PlotDPI, Titles=False):
     '''
     Makes an image of a fingerprint based on the Input data.  Does not calculate fingerprint with this funciton
     This functions takes the output of one of the makeFingerprint functions
