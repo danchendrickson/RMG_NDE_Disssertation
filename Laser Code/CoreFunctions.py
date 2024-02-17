@@ -328,34 +328,7 @@ def cwt_fixed_scipy(data, scales, wavelet, scalespace =1, sampling_period=1., be
     else:
         raise ValueError("Only dim == 1 supported")
 
-def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
-    '''
-    Function to filter out high frequency noise from a data signal. Usually 
-    perform this before running the DWFT on the signal.
-    
-    data_in: input signal
-    
-    wvt: mother wavelet
 
-    levels: number of levels to take in transformation
-
-    dets_to_remove: details to remove in filter
-    '''
-    # vector needs to have an even length, so just zero pad if length is odd.
-    if len(data_in) % 2 != 0:
-        data_in = np.append(data_in, 0)
-    
-    coeffs = pywt.swt(data_in, wvt, level=levels)
-    
-    if levels is None:
-        levels = len(coeffs)
-    
-    for i in range(dets_to_remove):
-        dets = np.asarray(coeffs[(levels-1)-i][1])
-        dets[:] = 0
-    
-    filtered_signal = pywt.iswt(coeffs,wvt)
-    return filtered_signal
 
 def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
                   valleysorpeaks='both', normconstant=1, plot=False, betaParameters = [10000,2,5,2,3]):
@@ -549,12 +522,62 @@ def getAcceleration(FileName):
         except:
             return [False,FileName,False]
 
-def KalmanFilterDenoise(data, rate=1):
+def butterHigh(data, cutFreq = 1000, frequency = 200000, order=5):
+    '''
+    Function to filter high frequency noise from a data signal, one of the options for the smoothing function
+    
+    Inputs:
+    data : raw data to filter
+    cutFreq : Frequency above which to filter
+    frequency : frequency of the input signal / sample rate
+    order : polynomial order for the butter function
+    
+    Output:
+    Cleaned signal
+    
+    '''
+    nyq = 0.5 * frequency
+    normal_cutoff = cutFreq / nyq
+    b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
+    Clean = signal.filtfilt(b, a, data)
+    return Clean
+
+def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
+    '''
+    Function to filter out high frequency noise from a data signal. Usually 
+    perform this before running the DWFT on the signal.
+    
+    data_in: input signal
+    
+    wvt: mother wavelet
+
+    levels: number of levels to take in transformation
+
+    dets_to_remove: details to remove in filter
+    '''
+    # vector needs to have an even length, so just zero pad if length is odd.
+    if len(data_in) % 2 != 0:
+        data_in = np.append(data_in, 0)
+    
+    coeffs = pywt.swt(data_in, wvt, level=levels)
+    
+    if levels is None:
+        levels = len(coeffs)
+    
+    for i in range(dets_to_remove):
+        dets = np.asarray(coeffs[(levels-1)-i][1])
+        dets[:] = 0
+    
+    filtered_signal = pywt.iswt(coeffs,wvt)
+    return filtered_signal
+
+
+def KalmanFilterDenoise(data, Kalrate=1):
 
     #https://jamwheeler.com/college-productivity/how-to-denoise-a-1-d-signal-with-a-kalman-filter-with-python/
     #
 
-    def oavar(data, rate, numpoints=30):
+    def oavar(data, Kalrate, numpoints=30):
 
         x = np.cumsum(data)
 
@@ -570,7 +593,7 @@ def KalmanFilterDenoise(data, rate=1):
                 (x[2*m:] - 2*x[m:-m] + x[:-2*m])**2
             ).mean() / (2*m**2)
 
-        return ms / rate, oavars
+        return ms / Kalrate, oavars
 
     def ln_NKfit(ln_tau, ln_N, ln_K):
         tau = np.exp(ln_tau)
@@ -578,8 +601,8 @@ def KalmanFilterDenoise(data, rate=1):
         oadev = N**2 / tau + K**2 * (tau/3)
         return np.log(oadev)
 
-    def get_NK(data, rate):
-        taus, oavars = oavar(data, rate)
+    def get_NK(data, Kalrate):
+        taus, oavars = oavar(data, Kalrate)
 
         ln_params, ln_varmatrix = (
             curve_fit(ln_NKfit, np.log(taus), np.log(oavars))
@@ -592,20 +615,17 @@ def KalmanFilterDenoise(data, rate=1):
 
     #rate = 1 # We can set this to 1, if we're calculating N, K internally
     # N and K will just be scaled relative to the sampling rate internally
-    dt = 1/rate
+    dt = 1/Kalrate
     
-    try:
+#    try:
+    N, K = get_NK(data, Kalrate)
+    process_noise = K**2 * dt
+    measurement_noise = N**2 / dt
 
-    
-     N, K = get_NK(data, rate)
+    covariance = measurement_noise
 
-     process_noise = K**2 * dt
-     measurement_noise = N**2 / dt
 
-     covariance = measurement_noise
-
-    
-     for index, measurement in enumerate(data):
+    for index, measurement in enumerate(data):
         # 1. Predict state using system's model
 
         covariance += process_noise
@@ -617,11 +637,12 @@ def KalmanFilterDenoise(data, rate=1):
         covariance = (1 - kalman_gain) * covariance
 
         output[index] = state
-    except:
-        output = np.ones(len(data))
+    #except:
+    #    output = np.ones(len(data))
     return output
 
-def Smoothing(RawData, SmoothType = 1, SmoothDistance=15):
+def Smoothing(RawData, SmoothType = 1, SmoothDistance=15, wvt='sym2', Kalrate=1,
+              dets_to_remove=5, levels=None, cutFreq = 1000, frequency = 200000, order=5):
     #Smooth type 0 or other is none
     #       type 1 is rolling average with SmoothDistance
     #       type 2 is low-filter denoise
@@ -642,9 +663,11 @@ def Smoothing(RawData, SmoothType = 1, SmoothDistance=15):
             for i in range(np.shape(RawData)[0]-SmoothDistance):
                 SmoothedData[i+SmoothDistance]=np.average(RawData[i:i+SmoothDistance])
     elif SmoothType == 2:
-        SmoothedData = low_pass_filter(RawData)
+        SmoothedData = low_pass_filter(RawData, wvt, dets_to_remove, levels)
     elif SmoothType == 3:
         SmoothedData = KalmanFilterDenoise(RawData)
+    elif SmoothType ==4:
+        SmoothedData = butterHigh(RawData, cutFreq, frequency, order)
     else:
         SmoothedData = RawData
     
