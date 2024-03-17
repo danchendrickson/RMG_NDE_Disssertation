@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from cycler import cycler
 import scipy.special as sp
+import pickle
 
 #Custome graph format style sheet
 #plt.style.use('Prospectus.mplstyle')
@@ -47,6 +48,16 @@ from time import time as ti
 # %%
 import CoreFunctions as cf
 from skimage.restoration import denoise_wavelet
+# %%
+from sklearn.model_selection import train_test_split
+import dask.dataframe as dd
+
+
+# %%
+from keras.layers import LSTM, Dense, RepeatVector, TimeDistributed, Masking
+from keras.callbacks import ModelCheckpoint
+from keras.models import Sequential
+import tensorflow as tf
 
 # %% [markdown]
 # ## Choosing Platform
@@ -256,7 +267,7 @@ def SepreateMovements(SquelchSignal, RawData, FileName):
                 #Move[0,2]=0
     Moves.append(Move)
     MoveNames.append(FileName + str(i).zfill(3))
-    return Moves, MoveNames
+    return (Moves, MoveNames)
     
 
 
@@ -267,7 +278,7 @@ def splitLong(Moves, maxLength = 4000, minLength = 1000, MoveNames = []):
     Xmoves = []
     Xnames = []
     for i in range(len(Moves)):
-        if np.shape(move)[0] > maxLength: 
+        if np.shape(Moves[i])[0] > maxLength: 
             Xmoves.append(Moves[i][:int(len(Moves[i])/2),:])
             Xnames.append(MoveNames[i] + 'a')
             Xmoves.append(Moves[i][int(len(Moves[i])/2):,:])
@@ -309,6 +320,7 @@ loops = int(len(files) / LoopFiles)
 if len(files)%LoopFiles != 0:
     loops += 1
 
+print('files', len(files), loops)
 
 # %%
 SquelchSignal = []
@@ -335,52 +347,63 @@ for k in range(loops):
         SquelchSignal.append(Results[i][0])
         RawData.append(Results[i][1])
         OrderedFileNames.append(Results[i][3])
-    print(k, np.shape(Results), (ti()-st)/60.0)
+    print(k, len(Results), (ti()-st)/60.0)
     
 
 
 
 # %%
-print('got data', np.shape(RawData[0]))
+print('got data', len(RawData), len(SquelchSignal), np.shape(RawData[0]))
 
 # %%
 #MoveData = Parallel(n_jobs=31)(delayed(SepreateMovements)(SquelchSignal[i], RawData[i], OrderedFileNames[i])
 #                                       for i in range(len(RawData)))
 
 MoveData = []
+Moves = []
+MoveNames = []
+
 for i in range(len(RawData)):
-    MoveData.append(SepreateMovements(SquelchSignal[i], RawData[i].T, OrderedFileNames[i]))
+    temp = SepreateMovements(SquelchSignal[i], RawData[i].T, OrderedFileNames[i])
+    print(i, len(temp), len(temp[0]), len(temp[1]))
+    for j in range(len(temp[0])):
+        Moves.append(temp[0][j])
+        MoveNames.append(temp[1][j])
+    #MoveData.append(temp)
+
+print('Moves Seperated', len(Moves), (ti()-st)/60.0)
+    
+# %%
+#Movements = []
+#GroupNames = []
+#for move in MoveData:
+#    Movements.append(move[0])
+#    GroupNames.append(move[1])
+
+#print('Move and Name Sepreated', len(Movements), (ti()-st)/60.0)
 
 # %%
-Movements = []
-GroupNames = []
-for move in MoveData:
-    Movements.append(move[0])
-    GroupNames.append(move[1])
+#Moves=[]
 
-
-
-# %%
-Moves=[]
-for Groups in Movements:
-    for Move in Groups:
-        Moves.append(np.asarray(Move).astype('float32'))
+#for Groups in Movements:
+#    for Move in Groups:
+#        Moves.append(np.asarray(Move).astype('float32'))
 #Moves = np.asarray(Moves)
 
-MoveNames = []
-for Groups in GroupNames:
-    for name in Groups:
-        MoveNames.append(name)
+#MoveNames = []
+#for Groups in GroupNames:
+#    for name in Groups:
+#        MoveNames.append(name)
 
 # %%
-print('made moves')
+#print('made moves')
 
 del SquelchSignal
 del RawData
-del Movements
-del GroupNames
-del MoveData
-del OrderedFileNames
+#del Movements
+#del GroupNames
+#del MoveData
+#del OrderedFileNames
 
 
 # %%
@@ -393,9 +416,7 @@ minLength = 750
 # %%
 Moves, MoveNames = splitLong(Moves, longMove+1, minLength, MoveNames)
 
-
-# %%
-np.shape(Moves[0])
+print('Post split length', len(Moves), np.shape(Moves[0]))
 
 # %%
 #padding moves.  Not needed, need sequences, not moves
@@ -419,7 +440,7 @@ np.shape(Moves[0])
 # https://machinelearningmastery.com/how-to-develop-lstm-models-for-time-series-forecasting/
 
 # %%
-TimeSteps = 300
+TimeSteps = 250
 Features = np.shape(Moves[0])[1]
 
 # %%
@@ -458,17 +479,14 @@ for out in Outputs:
         NextDataPoint.append(pt)
 
 # %%
-print('data split')
-np.shape(NextDataPoint)
+print('data split', len(MoveSegments))
+print('Shape next data point', np.shape(NextDataPoint))
 
-# %%
-from sklearn.model_selection import train_test_split
 
-# %%
-from keras.layers import LSTM, Dense, RepeatVector, TimeDistributed, Masking
-from keras.callbacks import ModelCheckpoint
-from keras.models import Sequential
-import tensorflow as tf
+file=open('/scratch/PrepAccel/Data-20240307-16files-250pts.p','wb')
+pickle.dump([MoveSegments, NextDataPoint],file)
+file.close()
+
 
 #gpus = tf.config.list_physical_devices('GPU')
 #tf.config.set_visible_devices(gpus[:4], 'GPU')
@@ -476,6 +494,7 @@ import tensorflow as tf
 tf.get_logger().setLevel('INFO')
 tf.autograph.set_verbosity(1)
 
+filePrefix = 'Run20240305-'
 
 class LSTM_Autoencoder:
   def __init__(self, optimizer='adam', loss='mse'):
@@ -511,7 +530,7 @@ class LSTM_Autoencoder:
         model.summary()
     self.model = model
     
-  def fit(self, X, epochs=3, batch_size=32, callbacks = []):
+  def fit(self, X, epochs=3, batch_size=16, callbacks = []):
     #self.timesteps = np.shape(X)[0]
     self.build_model()
     
@@ -531,6 +550,7 @@ class LSTM_Autoencoder:
     plt.title("Reconstruction Error")
     plt.plot(scores)
     plt.plot([threshold_score]*len(scores), c='r')
+    plt.savefig(filePrefix+'reconstructionError.png')
     plt.show()
     
     anomalous = np.where(scores > threshold_score)
@@ -539,6 +559,7 @@ class LSTM_Autoencoder:
     plt.title("Anomalies")
     plt.scatter(normal, timeseries[normal][:,-1], s=3)
     plt.scatter(anomalous, timeseries[anomalous][:,-1], s=5, c='r')
+    plt.savefig(filePrefix+'Anomalies.png')
     plt.show()
 
 
@@ -553,18 +574,20 @@ class LSTM_Autoencoder:
 seq_train, seq_test, out_train, out_test = train_test_split(MoveSegments, NextDataPoint, test_size=0.05, shuffle=True, random_state=0)
 
 # %%
-import dask.dataframe as dd
-
-seq_train = dd.from_pandas(seq_train)
+#seq_train = dd.from_pandas(seq_train)
 
 # %%
 lstm_autoencoder = LSTM_Autoencoder(optimizer='adam', loss='mse')
+
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Set to 2 to suppress INFO messages
+
 
 # %%
 print('About to start Training')
 
 # define the checkpoint
-filepath = "model.h5"
+filepath = "LSTMonMovementsmodel.h5"
 checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
 callback_list = [checkpoint]
 
@@ -572,7 +595,7 @@ lstm_autoencoder.fit(seq_train, epochs=5, batch_size=32, callbacks=callback_list
 
 print('about to save')
 
-lstm_autoencoder.model.save("LSTM_eclipse")
+lstm_autoencoder.model.save("LSTM_onMovementsmodel")
 
 
 

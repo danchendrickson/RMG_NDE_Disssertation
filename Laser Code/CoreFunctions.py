@@ -538,8 +538,28 @@ def butterHigh(data, cutFreq = 1000, frequency = 200000, order=5):
     '''
     nyq = 0.5 * frequency
     normal_cutoff = cutFreq / nyq
-    b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
-    Clean = signal.filtfilt(b, a, data)
+    b, a = ss.butter(order, normal_cutoff, btype='highpass', analog=False)
+    Clean = ss.filtfilt(b, a, data)
+    return Clean
+
+def butterBand(data, cutFreq = 1000, frequency = 200000, order=5):
+    '''
+    Function to filter high frequency noise from a data signal, one of the options for the smoothing function
+    
+    Inputs:
+    data : raw data to filter
+    cutFreq : Frequency above which to filter
+    frequency : frequency of the input signal / sample rate
+    order : polynomial order for the butter function
+    
+    Output:
+    Cleaned signal
+    
+    '''
+    nyq = 0.5 * frequency
+    normal_cutoff = cutFreq / nyq
+    b, a = ss.butter(order, normal_cutoff, btype='bandpass', analog=False)
+    Clean = ss.filtfilt(b, a, data)
     return Clean
 
 def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
@@ -668,6 +688,8 @@ def Smoothing(RawData, SmoothType = 1, SmoothDistance=15, wvt='sym2', Kalrate=1,
         SmoothedData = KalmanFilterDenoise(RawData)
     elif SmoothType ==4:
         SmoothedData = butterHigh(RawData, cutFreq, frequency, order)
+    elif SmoothType ==5:
+        SmoothedData = butterBand(RawData, cutFreq, frequency, order)
     else:
         SmoothedData = RawData
     
