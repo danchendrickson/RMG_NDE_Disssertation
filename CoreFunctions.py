@@ -47,7 +47,7 @@ else:
     Computer = "WinLap"
 
 if Computer == "SciClone":
-    location = '~/image/'
+    location = '/sciclone/home20/dchendrickson01/image/'
 elif Computer == "WinLap":
     location = 'C:\\Data\\'
 elif Computer == "Desktop":
@@ -60,9 +60,9 @@ elif Computer == 'PortLap':
 
 
 if Computer ==  "SciClone":
-    rootfolder = '/sciclone/home/dchendrickson01/'
+    rootfolder = '/sciclone/home20/dchendrickson01/'
     if dataSize == 'big':
-        folder = '/scratch/CraneData/'
+        folder = '/sciclone/scr10/dchendrickson01/CraneData/'
     else:
         folder = '/sciclone/data10/dchendrickson01/SmallCopy/'
 elif Computer == "Desktop":
@@ -87,11 +87,11 @@ plt.rc('axes', prop_cycle=default_cycler)
 my_cmap = plt.get_cmap('gray')
 PlotWidthIn = 11
 PlotHeightIn = 3.75
-PlotDPI = 120
+PlotDPI = 3000
 
 beta_a = 2
 beta_b = 5
-beta_cycles = 3
+beta_cycles = 4
 beta_sineCosine = 1
 WaveletToUse = 'beta'
 #scales = np.linspace(0,2000,1001, dtype=int)
@@ -100,10 +100,10 @@ spacer = 10
 
 num_cores = multiprocessing.cpu_count() -1
 
-SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
-OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
-OutputTitles = OutputVectors[0,:]
-OutputVectors = OutputVectors[1:,:]
+#SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
+#OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
+#OutputTitles = OutputVectors[0,:]
+#OutputVectors = OutputVectors[1:,:]
 
 
 def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCycle = 0):
@@ -119,8 +119,8 @@ def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCy
             beWave[i] = beta[i] * math.sin(j*math.pi*sineCycle) * math.cos(j*math.pi*cosineCycle)
         x[i]=j
         
-    beWav2 = beWave[::-1]
-    return beWav2, x
+    #beWav2 = beWave[::-1]
+    return beWave, x
 
 def cwt_fixed(data, scales, wavelet, scalespace =1, sampling_period=1., betaParameters = [10000, beta_a,  beta_b, beta_cycles, 0]):
     """
@@ -230,64 +230,64 @@ def cwt_fixed(data, scales, wavelet, scalespace =1, sampling_period=1., betaPara
 def cwt_fixed_scipy(data, scales, wavelet, scalespace =1, sampling_period=1., betaParameters = [10000, beta_a,  beta_b, beta_cycles, 0]):
     
     '''
-            Modified verstion of cwt_fixed() by Spencer Kirn
-            COPIED AND FIXED FROM pywt.cwt TO BE ABLE TO USE WAVELET FAMILIES SUCH
-            AS COIF AND DB
-            
-            COPIED From Spenser Kirn
-            
-            All wavelet work except bior family, rbio family, haar, and db1.
-            
-            cwt(data, scales, wavelet)
-            
-            One dimensional Continuous Wavelet Transform.
-            
-            Parameters
-            ----------
-            data : array_like
-                Input signal
-            scales : array_like
-                scales to use
-            wavelet : Wavelet object or name
-                Wavelet to use
-            scalespace: integer
-                If usingging spacing beteen scales, allowing quicker computation at lower resuolution    
-            Returns
-            -------
-            coefs : array_like
-            Continous wavelet transform of the input signal for the given scales
-            and wavelet
-            frequencies : array_like
-            if the unit of sampling period are seconds and given, than frequencies
-            are in hertz. Otherwise Sampling period of 1 is assumed.
-            
-            Notes
-            -----
-            Size of coefficients arrays depends on the length of the input array and
-            the length of given scales.
-            
-            Examples
-            --------
-            >>> import pywt
-            >>> import numpy as np
-            >>> import matplotlib.pyplot as plt
-            >>> x = np.arange(512)
-            >>> y = np.sin(2*np.pi*x/32)
-            >>> coef, freqs=pywt.cwt(y,np.arange(1,129),'gaus1')
-            >>> plt.matshow(coef) # doctest: +SKIP
-            >>> plt.show() # doctest: +SKIP
-            ----------
-            >>> import pywt
-            >>> import numpy as np
-            >>> import matplotlib.pyplot as plt
-            >>> t = np.linspace(-1, 1, 200, endpoint=False)
-            >>> sig  = np.cos(2 * np.pi * 7 * t) + np.real(np.exp(-7*(t-0.4)**2)*np.exp(1j*2*np.pi*2*(t-0.4)))
-            >>> widths = np.arange(1, 31)
-            >>> cwtmatr, freqs = pywt.cwt(sig, widths, 'mexh')
-            >>> plt.imshow(cwtmatr, extent=[-1, 1, 1, 31], cmap='PRGn', aspect='auto',
-            ...            vmax=abs(cwtmatr).max(), vmin=-abs(cwtmatr).max())  # doctest: +SKIP
-            >>> plt.show() # doctest: +SKIP
-    '''
+			Modified verstion of cwt_fixed() by Spencer Kirn
+			COPIED AND FIXED FROM pywt.cwt TO BE ABLE TO USE WAVELET FAMILIES SUCH
+			AS COIF AND DB
+			
+			COPIED From Spenser Kirn
+			
+			All wavelet work except bior family, rbio family, haar, and db1.
+			
+			cwt(data, scales, wavelet)
+			
+			One dimensional Continuous Wavelet Transform.
+			
+			Parameters
+			----------
+			data : array_like
+				Input signal
+			scales : array_like
+				scales to use
+			wavelet : Wavelet object or name
+				Wavelet to use
+			scalespace: integer
+				If usingging spacing beteen scales, allowing quicker computation at lower resuolution	
+			Returns
+			-------
+			coefs : array_like
+			Continous wavelet transform of the input signal for the given scales
+			and wavelet
+			frequencies : array_like
+			if the unit of sampling period are seconds and given, than frequencies
+			are in hertz. Otherwise Sampling period of 1 is assumed.
+			
+			Notes
+			-----
+			Size of coefficients arrays depends on the length of the input array and
+			the length of given scales.
+			
+			Examples
+			--------
+			>>> import pywt
+			>>> import numpy as np
+			>>> import matplotlib.pyplot as plt
+			>>> x = np.arange(512)
+			>>> y = np.sin(2*np.pi*x/32)
+			>>> coef, freqs=pywt.cwt(y,np.arange(1,129),'gaus1')
+			>>> plt.matshow(coef) # doctest: +SKIP
+			>>> plt.show() # doctest: +SKIP
+			----------
+			>>> import pywt
+			>>> import numpy as np
+			>>> import matplotlib.pyplot as plt
+			>>> t = np.linspace(-1, 1, 200, endpoint=False)
+			>>> sig  = np.cos(2 * np.pi * 7 * t) + np.real(np.exp(-7*(t-0.4)**2)*np.exp(1j*2*np.pi*2*(t-0.4)))
+			>>> widths = np.arange(1, 31)
+			>>> cwtmatr, freqs = pywt.cwt(sig, widths, 'mexh')
+			>>> plt.imshow(cwtmatr, extent=[-1, 1, 1, 31], cmap='PRGn', aspect='auto',
+			...            vmax=abs(cwtmatr).max(), vmin=-abs(cwtmatr).max())  # doctest: +SKIP
+			>>> plt.show() # doctest: +SKIP
+		'''
     dt = _check_dtype(data)
     data = np.array(data, dtype=dt)
     if wavelet == 'beta':
@@ -311,18 +311,14 @@ def cwt_fixed_scipy(data, scales, wavelet, scalespace =1, sampling_period=1., be
         else:    
             int_psi, x = integrate_wavelet(wavelet, precision=precision)
         step = x[1] - x[0]
-        for i in range(len(scales)):
+        for i in np.arange(np.size(scales)):
             j = np.floor(
                 np.arange(scales[i] * (x[-1] - x[0]) + 1) / (scales[i] * step))
             if np.max(j) >= np.size(int_psi):
                 j = np.delete(j, np.where((j >= np.size(int_psi)))[0])
-            coef = - np.sqrt(scales[i]) * np.diff(np.convolve(data, int_psi[j.astype(int)][::-1]))
+            coef = - np.sqrt(scales[i]) * np.diff(ss.fftconvolve(data, int_psi[j.astype(int)][::-1]))
             d = (coef.size - data.size) / 2.
-            for j in range(data.size):
-                try:
-                    out[i,j] = coef[j+int(d)]
-                except:
-                    pass
+            out[i, :] = coef[int(np.floor(d)):int(-np.ceil(d))]
         #frequencies = scale2frequency(wavelet, scales, precision)
         #if np.isscalar(frequencies):
         #    frequencies = np.array([frequencies])
@@ -332,34 +328,7 @@ def cwt_fixed_scipy(data, scales, wavelet, scalespace =1, sampling_period=1., be
     else:
         raise ValueError("Only dim == 1 supported")
 
-def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
-    '''
-    Function to filter out high frequency noise from a data signal. Usually 
-    perform this before running the DWFT on the signal.
-    
-    data_in: input signal
-    
-    wvt: mother wavelet
 
-    levels: number of levels to take in transformation
-
-    dets_to_remove: details to remove in filter
-    '''
-    # vector needs to have an even length, so just zero pad if length is odd.
-    if len(data_in) % 2 != 0:
-        data_in = np.append(data_in, 0)
-    
-    coeffs = pywt.swt(data_in, wvt, level=levels)
-    
-    if levels is None:
-        levels = len(coeffs)
-    
-    for i in range(dets_to_remove):
-        dets = np.asarray(coeffs[(levels-1)-i][1])
-        dets[:] = 0
-    
-    filtered_signal = pywt.iswt(coeffs,wvt)
-    return filtered_signal
 
 def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
                   valleysorpeaks='both', normconstant=1, plot=False, betaParameters = [10000,2,5,2,3]):
@@ -409,20 +378,20 @@ def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsli
 def getThumbprint2(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
                   valleysorpeaks='both', normconstant=1, plot=False):
     '''Modifications of DWFT code from Spencer Kirn and Margerat Rooney.  Calculates the thumbprint using
-           matrix math to the great extent possible allowing it to go faster than nested loops and comparisons.
-           The code does not allow for differences in positive and negative slice thickness, and has the same
-           thickeness for both white and dark bands.
-           
-           Inputs:
-                   data: the signal to be fingerprinted
-                   wvt: the wavelet that will be used
-                   ns = the number of scales that the 2d wavlet will be analyzed over
-                   scalespace = instead of doing every scall, you can skip and only calculate ever nth, with 
-                         lower resolution, but more scales and quicker processing
-                   numslices = the number of white bands.  There will then be n-1 black bands.
-               
-               Output:
-                   2D matrix of 0's and 1's for the length of the data x the number of scales
+		   matrix math to the great extent possible allowing it to go faster than nested loops and comparisons.
+		   The code does not allow for differences in positive and negative slice thickness, and has the same
+		   thickeness for both white and dark bands.
+		   
+		   Inputs:
+		   		data: the signal to be fingerprinted
+		   		wvt: the wavelet that will be used
+		   		ns = the number of scales that the 2d wavlet will be analyzed over
+		   		scalespace = instead of doing every scall, you can skip and only calculate ever nth, with 
+		   		      lower resolution, but more scales and quicker processing
+		   		numslices = the number of white bands.  There will then be n-1 black bands.
+		   	
+		   	Output:
+		   		2D matrix of 0's and 1's for the length of the data x the number of scales
     '''
     
         # First take the wavelet transform and then normalize to one
@@ -478,7 +447,7 @@ def RidgeCount(fingerprint):
     
     return ridgeCount
 
-def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving):
+def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving, Show = True, Pdpi =PlotDPI, Titles=False):
     '''
     Makes an image of a fingerprint based on the Input data.  Does not calculate fingerprint with this funciton
     This functions takes the output of one of the makeFingerprint functions
@@ -502,7 +471,7 @@ def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving):
     scales = np.shape(data)[0]
     trim=0
     slices = 3
-    Show = True
+    #Show = True
     
     xName = np.arange(0,np.shape(data)[1]-2*trim,1)
     
@@ -513,7 +482,7 @@ def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving):
 
     
 
-    fig1 = plt.figure(figsize=(PlotWidthIn,PlotHeightIn),dpi=PlotDPI)
+    fig1 = plt.figure(figsize=(PlotWidthIn,PlotHeightIn),dpi=Pdpi)
     ax1 = plt.axes()
     if trim == 0:
         cs1 = ax1.contourf(Al,Ms, data[:,:],cmap=my_cmap,levels=slices)
@@ -521,7 +490,7 @@ def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving):
         cs1 = ax1.contourf(Al,Ms, data[:,trim:-trim],cmap=my_cmap,levels=slices)
 
     if Titles: plt.title(title)
-    if ToSave: plt.savefig(SaveSpot+title.replace(" ", "").replace(":", "").replace(",", "").replace(".txt","")+FFormat)
+    if ToSave: plt.savefig(SaveSpot+title.replace(" ", "").replace(":", "").replace(",", "").replace(".txt","").replace(".csv","")+FFormat)
 
     if Show: plt.show()
     else: plt.close(fig1)
@@ -553,12 +522,82 @@ def getAcceleration(FileName):
         except:
             return [False,FileName,False]
 
-def KalmanFilterDenoise(data, rate=1):
+def butterHigh(data, cutFreq = 1000, frequency = 200000, order=5):
+    '''
+    Function to filter high frequency noise from a data signal, one of the options for the smoothing function
+    
+    Inputs:
+    data : raw data to filter
+    cutFreq : Frequency above which to filter
+    frequency : frequency of the input signal / sample rate
+    order : polynomial order for the butter function
+    
+    Output:
+    Cleaned signal
+    
+    '''
+    nyq = 0.5 * frequency
+    normal_cutoff = cutFreq / nyq
+    b, a = ss.butter(order, normal_cutoff, btype='highpass', analog=False)
+    Clean = ss.filtfilt(b, a, data)
+    return Clean
+
+def butterBand(data, cutFreq = 1000, frequency = 200000, order=5):
+    '''
+    Function to filter high frequency noise from a data signal, one of the options for the smoothing function
+    
+    Inputs:
+    data : raw data to filter
+    cutFreq : Frequency above which to filter
+    frequency : frequency of the input signal / sample rate
+    order : polynomial order for the butter function
+    
+    Output:
+    Cleaned signal
+    
+    '''
+    nyq = 0.5 * frequency
+    normal_cutoff = cutFreq / nyq
+    b, a = ss.butter(order, normal_cutoff, btype='bandpass', analog=False)
+    Clean = ss.filtfilt(b, a, data)
+    return Clean
+
+def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
+    '''
+    Function to filter out high frequency noise from a data signal. Usually 
+    perform this before running the DWFT on the signal.
+    
+    data_in: input signal
+    
+    wvt: mother wavelet
+
+    levels: number of levels to take in transformation
+
+    dets_to_remove: details to remove in filter
+    '''
+    # vector needs to have an even length, so just zero pad if length is odd.
+    if len(data_in) % 2 != 0:
+        data_in = np.append(data_in, 0)
+    
+    coeffs = pywt.swt(data_in, wvt, level=levels)
+    
+    if levels is None:
+        levels = len(coeffs)
+    
+    for i in range(dets_to_remove):
+        dets = np.asarray(coeffs[(levels-1)-i][1])
+        dets[:] = 0
+    
+    filtered_signal = pywt.iswt(coeffs,wvt)
+    return filtered_signal
+
+
+def KalmanFilterDenoise(data, Kalrate=1):
 
     #https://jamwheeler.com/college-productivity/how-to-denoise-a-1-d-signal-with-a-kalman-filter-with-python/
     #
 
-    def oavar(data, rate, numpoints=30):
+    def oavar(data, Kalrate, numpoints=30):
 
         x = np.cumsum(data)
 
@@ -574,7 +613,7 @@ def KalmanFilterDenoise(data, rate=1):
                 (x[2*m:] - 2*x[m:-m] + x[:-2*m])**2
             ).mean() / (2*m**2)
 
-        return ms / rate, oavars
+        return ms / Kalrate, oavars
 
     def ln_NKfit(ln_tau, ln_N, ln_K):
         tau = np.exp(ln_tau)
@@ -582,8 +621,8 @@ def KalmanFilterDenoise(data, rate=1):
         oadev = N**2 / tau + K**2 * (tau/3)
         return np.log(oadev)
 
-    def get_NK(data, rate):
-        taus, oavars = oavar(data, rate)
+    def get_NK(data, Kalrate):
+        taus, oavars = oavar(data, Kalrate)
 
         ln_params, ln_varmatrix = (
             curve_fit(ln_NKfit, np.log(taus), np.log(oavars))
@@ -596,20 +635,17 @@ def KalmanFilterDenoise(data, rate=1):
 
     #rate = 1 # We can set this to 1, if we're calculating N, K internally
     # N and K will just be scaled relative to the sampling rate internally
-    dt = 1/rate
+    dt = 1/Kalrate
     
-    try:
+#    try:
+    N, K = get_NK(data, Kalrate)
+    process_noise = K**2 * dt
+    measurement_noise = N**2 / dt
 
-    
-     N, K = get_NK(data, rate)
+    covariance = measurement_noise
 
-     process_noise = K**2 * dt
-     measurement_noise = N**2 / dt
 
-     covariance = measurement_noise
-
-    
-     for index, measurement in enumerate(data):
+    for index, measurement in enumerate(data):
         # 1. Predict state using system's model
 
         covariance += process_noise
@@ -621,11 +657,12 @@ def KalmanFilterDenoise(data, rate=1):
         covariance = (1 - kalman_gain) * covariance
 
         output[index] = state
-    except:
-        output = np.ones(len(data))
+    #except:
+    #    output = np.ones(len(data))
     return output
 
-def Smoothing(RawData, SmoothType = 1, SmoothDistance=15):
+def Smoothing(RawData, SmoothType = 1, SmoothDistance=15, wvt='sym2', Kalrate=1,
+              dets_to_remove=5, levels=None, cutFreq = 1000, frequency = 200000, order=5):
     #Smooth type 0 or other is none
     #       type 1 is rolling average with SmoothDistance
     #       type 2 is low-filter denoise
@@ -646,9 +683,13 @@ def Smoothing(RawData, SmoothType = 1, SmoothDistance=15):
             for i in range(np.shape(RawData)[0]-SmoothDistance):
                 SmoothedData[i+SmoothDistance]=np.average(RawData[i:i+SmoothDistance])
     elif SmoothType == 2:
-        SmoothedData = low_pass_filter(RawData)
+        SmoothedData = low_pass_filter(RawData, wvt, dets_to_remove, levels)
     elif SmoothType == 3:
         SmoothedData = KalmanFilterDenoise(RawData)
+    elif SmoothType ==4:
+        SmoothedData = butterHigh(RawData, cutFreq, frequency, order)
+    elif SmoothType ==5:
+        SmoothedData = butterBand(RawData, cutFreq, frequency, order)
     else:
         SmoothedData = RawData
     
@@ -868,9 +909,9 @@ def getScalesOnly(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, plot=F
     maxs = np.max(cfX)
     cfX -= mins
     cfX *= 1/(maxs-mins)
-    cfX *= 256
+    cfX *= 255
 
-    return cfX.astype(int)
+    return cfX
 
 def KalmanGroup(DataMatrix):
     waveKalmaned = np.asarray([],dtype=object)
@@ -886,62 +927,15 @@ def KalmanGroup(DataMatrix):
     
     return waveKalmaned
 
-def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title = '', returnData = True):
-    '''
-        Makes 3D wavelet spectragram images from a 3D motion source.
-        The XYZ components of Acceleration each are turned into a the scale values from the wavelet
-        and the wavelet scales images are then stored as the RBG colors for a single image.
+def makeMatrixImages(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1):
 
-        Inputs:
-            DataMatrix: 3 arrays of XYZ components of a signal
-            wvt: The wavelet used to make the DWFP
-            sacales: number of scales to using in makig the wavelet
-            spacer: weather or not the scales are consecutive integers, or skip numbers
-            title: if a title is given, the image will be saved as a 
-                    png with that file name, if not given, not saved
-            returnDAta: if True will return the image matrix, if False, will not
-        Outputs:
-            array of 3 arrays that can be an 0-255 color depth image
+    xPrint = getScalesOnly(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)
+    yPrint = getScalesOnly(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)
+    zPrint = getScalesOnly(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)
 
-        Notes:
-            other getThumprint2 inputs are left at defaults, such as scales,
-            scale spacing, etc.
+    PrintMatrix = np.dstack((xPrint,yPrint,zPrint))
     
-    '''
-    try:
-        xPrint = getScalesOnly(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)
-        yPrint = getScalesOnly(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)
-        zPrint = getScalesOnly(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)
-    except:
-        print(wvt, title)
-        xPrint = np.zeros((len(DataMatrix[0].flatten()),scales))
-        yPrint = np.zeros((len(DataMatrix[0].flatten()),scales))
-        zPrint = np.zeros((len(DataMatrix[0].flatten()),scales))
-    
-    '''xPrint = xPrint.real
-    xPrint -= np.min(xPrint)
-    xPrint /= np.max(xPrint)
-    xPrint *= 255
-
-    yPrint = yPrint.real
-    yPrint -= np.min(yPrint)
-    yPrint /= np.max(yPrint)
-    yPrint *= 255
-
-    zPrint = zPrint.real
-    zPrint -= np.min(zPrint)
-    zPrint /= np.max(zPrint)
-    zPrint *= 255'''
-    
-    PrintMatrix = np.dstack((np.asarray(xPrint),np.asarray(yPrint),np.asarray(zPrint)))
-
-    if len(title)> 1:
-        cv2.imwrite(title + '.png', PrintMatrix)
-
-    if returnData:
-        return np.asarray(PrintMatrix)
-    else: 
-        pass
+    return np.asarray(PrintMatrix)
 
 def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
 
@@ -950,10 +944,10 @@ def makeMatrixPrints(DataMatrix, wvt = WaveletToUse):
     zPrint = getThumbprint(np.asarray(DataMatrix[2]).flatten(), wvt)*255
 
     PrintMatrix = np.dstack((xPrint.T,yPrint.T,zPrint.T))
-                     
+    
     return np.asarray(PrintMatrix)
 
-def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title = '', returnData = True):
+def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title = ''):
     '''
         Makes a 3D thumbprint images from a 3D motion source.
         The XYZ components of Acceleration each are turned into a thumbprint
@@ -974,7 +968,6 @@ def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title 
             scale spacing, etc.
     
     '''
-    #try:
     xPrint = getThumbprint2(np.asarray(DataMatrix[0]).flatten(), wvt, scales, spacer)*255
     yPrint = getThumbprint2(np.asarray(DataMatrix[1]).flatten(), wvt, scales, spacer)*255
     zPrint = getThumbprint2(np.asarray(DataMatrix[2]).flatten(), wvt, scales, spacer)*255
@@ -983,10 +976,5 @@ def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title 
 
     if len(title)> 1:
         cv2.imwrite(title + '.png', PrintMatrix)
-
-    if returnData:
-        return np.asarray(PrintMatrix)
-    else: 
-        pass
-    #except:
-    #    pass
+    
+    return np.asarray(PrintMatrix)

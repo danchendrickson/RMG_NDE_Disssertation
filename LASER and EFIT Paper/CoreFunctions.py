@@ -584,6 +584,8 @@ def low_pass_filter(data_in, wvt='sym2', dets_to_remove=5, levels=None):
     if levels is None:
         levels = len(coeffs)
     
+    print(levels)
+    
     for i in range(dets_to_remove):
         dets = np.asarray(coeffs[(levels-1)-i][1])
         dets[:] = 0
