@@ -47,6 +47,8 @@ import platform
 
 from time import time as ti
 
+import pickle
+
 # %%
 import CoreFunctions as cf
 from skimage.restoration import denoise_wavelet
@@ -70,6 +72,8 @@ HostName = platform.node()
 if HostName == "Server":
     Computer = "Desktop"   
 elif HostName[-6:] == 'wm.edu':
+    Computer = "SciClone"
+elif HostName == "astral":
     Computer = "SciClone"
 elif HostName == "SchoolLaptop":
     Computer = "LinLap"
@@ -95,6 +99,7 @@ if Computer ==  "SciClone":
     rootfolder = '/sciclone/home/dchendrickson01/'
     folder = '/scratch/Recordings2/'
     imageFolder = '/scratch/Move3Dprint/'
+    SplitFolder = '/scratch/RecordingsSplit/'
     
     rootfolder = '/sciclone/home/dchendrickson01/'
     folder = '//sciclone/scr10/dchendrickson01/Recordings2/'
@@ -126,32 +131,21 @@ Titles = True
 Ledgends = True
 minLength = 750
 
-LoopFiles = 5
-
+LoopFiles = 12
 
 f = 0
 
+global st
+
+st = ti()
+FileCount = 1
+
+SequenceStep = 25
+PredictLength = 50
+
+
 # %%
 
-files = os.listdir(folder)
-
-files = ['230418 recording1.csv','230419 recording1.csv','230420 recording1.csv','230421 recording1.csv']#,
-#         '230418 recording2.csv','230419 recording2.csv','230420 recording2.csv','230421 recording2.csv',
-#         '230425 recording1.csv','230425 recording2.csv','230426 recording2.csv','230427 recording2.csv',
-#         '230428 recording2.csv','230509 recording1.csv','230510 recording1.csv','230511 recording1.csv']
-
-# %%
-BeforeTamping = ['221206 recording1.csv','221207 recording1.csv','221208 recording1.csv','221209 recording1.csv',
-         '221206 recording2.csv','221207 recording2.csv','221208 recording2.csv','221209 recording2.csv']
-
-
-loops = int(len(files) / LoopFiles) 
-if len(files)%LoopFiles != 0:
-    loops += 1
-
-print('files', len(files), loops)
-# %% [markdown]
-# ## Project Specific Functions
 
 # %%
 def RollingStdDev(RawData, SmoothData, RollSize = 25):
@@ -338,16 +332,18 @@ def split_list_by_ones(original_list, ones_list):
 
     return result_sublists
 
-def split_sequences(sequences, n_steps):
+def split_sequences(sequences, n_steps, SeqStep=1,PredLeng=1):
     X, y = list(), list()
-    for i in range(len(sequences)):
+    for i in range(int(len(sequences)/SeqStep)+1):
         # find the end of this pattern
-        end_ix = i + n_steps
+        start_ix = i * SeqStep
+        end_ix = start_ix + n_steps
+        endPred_ix = end_ix + PredLeng
         # check if we are beyond the dataset
-        if end_ix > len(sequences)-1:
+        if endPred_ix > len(sequences)-1:
             break
         # gather input and output parts of the pattern
-        seq_x, seq_y = sequences[i:end_ix, :], sequences[end_ix, :]
+        seq_x, seq_y = sequences[start_ix:end_ix, :], sequences[end_ix:endPred_ix, :]
         X.append(seq_x)
         y.append(seq_y)
     return np.array(X), np.array(y)
@@ -355,92 +351,138 @@ def split_sequences(sequences, n_steps):
 
 # %%
 #Smooth = cf.Smoothing(ODataSet[:,3],2) #,50)
-def RunPrep(file):
+def RunPrep(file, FileCount):
+
+    global st
+    
     if file[-3:] =='csv':
-        ODataSet = np.genfromtxt(open(folder+file,'r'), delimiter=',',skip_header=0,missing_values=0,invalid_raise=False)
-        remainder = len(ODataSet[:,3]) % 10
-        try:
-            SmoothX = cf.Smoothing(ODataSet[:,3].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,3], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
-            SmoothY = cf.Smoothing(ODataSet[:,4].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,4], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
-            SmoothZ = cf.Smoothing(ODataSet[:,5].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,5], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
-        except:
+        files = os.listdir(SplitFolder+'xFold/')
+        if 1==2: #any(file[:-4] in x for x in files):
+            print(file[:-4] +' already done, skipping.  File '+str(FileCount))
+            
+            FileCount+=1
+        else:
+            ODataSet = np.genfromtxt(open(folder+file,'r'), delimiter=',',skip_header=0,missing_values=0,invalid_raise=False)
+            remainder = len(ODataSet[:,3]) % 10
             try:
-                remainder+=2
                 SmoothX = cf.Smoothing(ODataSet[:,3].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,3], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
                 SmoothY = cf.Smoothing(ODataSet[:,4].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,4], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
                 SmoothZ = cf.Smoothing(ODataSet[:,5].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,5], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
             except:
-                remainder+=2
-                SmoothX = cf.Smoothing(ODataSet[:,3].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,3], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
-                SmoothY = cf.Smoothing(ODataSet[:,4].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,4], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
-                SmoothZ = cf.Smoothing(ODataSet[:,5].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,5], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
-        SmoothX -= np.average(SmoothX)
-        SmoothY -= np.average(SmoothY)
-        SmoothZ -= np.average(SmoothZ)
-        StdDevsX = RollingStdDev(ODataSet[:,3][:-remainder],SmoothX)
-        StdDevsX.append(0)
-        StdDevsX = np.asarray(StdDevsX).flatten()
-        SmoothDevX = cf.Smoothing(StdDevsX,2,dets_to_remove=3)
-        AverageStdDev = np.average(StdDevsX)
-        StdDevsX -= AverageStdDev
-        SquelchSignal = SquelchPattern(np.abs(SmoothX), 500, 0.02)
-        last = 0
-        running = 0
-        for j in range(len(SquelchSignal)):
-            if SquelchSignal[j] == 1:
-                running+=1
-                last = 1
-            else:
-                if last == 1:
-                    if running < 500:
-                        SquelchSignal[j-running-1:j+1] = 1
-                    running = 0
-                last = 0
-        #Velocity = getVelocity(ODataSet[:,3], ODataSet[:,2],SquelchSignal, 2)
-        #Velocity = np.asarray(Velocity)
-        MoveMatrix = np.matrix([SmoothX, SmoothY, SmoothZ])
+                try:
+                    remainder+=2
+                    SmoothX = cf.Smoothing(ODataSet[:,3].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,3], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
+                    SmoothY = cf.Smoothing(ODataSet[:,4].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,4], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
+                    SmoothZ = cf.Smoothing(ODataSet[:,5].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,5], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
+                except:
+                    remainder+=2
+                    SmoothX = cf.Smoothing(ODataSet[:,3].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,3], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
+                    SmoothY = cf.Smoothing(ODataSet[:,4].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,4], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
+                    SmoothZ = cf.Smoothing(ODataSet[:,5].T[:-remainder],2,dets_to_remove=3) #denoise_wavelet(ODataSet[:,5], method='VisuShrink', mode='soft', wavelet_levels=3, wavelet='sym2', rescale_sigma='True')
+            SmoothX -= np.average(SmoothX)
+            SmoothY -= np.average(SmoothY)
+            SmoothZ -= np.average(SmoothZ)
+            StdDevsX = RollingStdDev(ODataSet[:,3][:-remainder],SmoothX)
+            StdDevsX.append(0)
+            StdDevsX = np.asarray(StdDevsX).flatten()
+            SmoothDevX = cf.Smoothing(StdDevsX,2,dets_to_remove=3)
+            AverageStdDev = np.average(StdDevsX)
+            StdDevsX -= AverageStdDev
+            SquelchSignal = SquelchPattern(np.abs(SmoothX), 500, 0.02)
+            last = 0
+            running = 0
+            for j in range(len(SquelchSignal)):
+                if SquelchSignal[j] == 1:
+                    running+=1
+                    last = 1
+                else:
+                    if last == 1:
+                        if running < 500:
+                            SquelchSignal[j-running-1:j+1] = 1
+                        running = 0
+                    last = 0
+            #Velocity = getVelocity(ODataSet[:,3], ODataSet[:,2],SquelchSignal, 2)
+            #Velocity = np.asarray(Velocity)
+            MoveMatrix = np.matrix([SmoothX, SmoothY, SmoothZ])
 
-        AllMoves=[]
-        #MoveNames=[]
+            AllMoves=[]
+            MoveNames=[]
 
-        AllMovesX = split_list_by_ones(MoveMatrix[0,:].T.tolist(),SquelchSignal[i].tolist())
-        AllMovesY = split_list_by_ones(MoveMatrix[1,:].T.tolist(),SquelchSignal[i].tolist())
-        AllMovesZ = split_list_by_ones(MoveMatrix[2,:].T.tolist(),SquelchSignal[i].tolist())
-    
-        for j in range(len(AllMovesX)):
-            AllMoves.append(np.matrix(np.stack((AllMovesX[j],AllMovesY[j],AllMovesZ[j]),axis=1)))
-            MoveNames.append(file[:-4]+'-'+j.zfill(6))
+            #print('Files Analyzed')
 
-        longMove, MoveNumb = findMaxLength(AllMoves)
-        Moves, MoveNames = splitLong(AllMoves, longMove+1, minLength, MoveNames)
-        
-        k = 0
-        for j in range(len(Moves)):
-            Xs, Ys = split_sequences(Moves[j],minLength)
-            for i in range(len(Xs)):
-                np.savetxt(SplitFolder+'xFold/'+MoveNames[j]+'-'+k.zfill(6)+'.csv', Xs[i], delimiter=",")
-                np.savetxt(SplitFolder+'yFold/'+MoveNames[j]+'-'+k.zfill(6)+'.csv', Ys[i], delimiter=",")
-                k+=1
+            AllMovesX = split_list_by_ones(MoveMatrix[0,:].T.tolist(),SquelchSignal.tolist())
+            AllMovesY = split_list_by_ones(MoveMatrix[1,:].T.tolist(),SquelchSignal.tolist())
+            AllMovesZ = split_list_by_ones(MoveMatrix[2,:].T.tolist(),SquelchSignal.tolist())
 
-        return file, len(Moves)
+            for j in range(len(AllMovesX)):
+                AllMoves.append(np.matrix(np.stack((AllMovesX[j],AllMovesY[j],AllMovesZ[j]),axis=1)))
+                MoveNames.append(file[:-4]+'-'+str(j).zfill(6))
+
+            longMove, MoveNumb = findMaxLength(AllMoves)
+            Moves, MoveNames = splitLong(AllMoves, longMove+1, minLength, MoveNames)
+
+            #print('Moves Split, Beginning sequences')
+
+            k = 0
+            for j in range(len(Moves)):
+                Xs, Ys = split_sequences(Moves[j],minLength,SequenceStep, PredictLength)
+                f = open(SplitFolder+'xFold/'+MoveNames[j]+'.p','wb')
+                pickle.dump([Xs,MoveNames[j]],f)
+                f.close()
+
+                f = open(SplitFolder+'yFold/'+MoveNames[j]+'.p','wb')
+                pickle.dump([Ys,MoveNames[j]],f)
+                f.close()
+
+                #for i in range(len(Xs)):
+                #    np.savetxt(SplitFolder+'xFold/'+MoveNames[j]+'-'+str(k).zfill(6)+'.csv', Xs[i], delimiter=",")
+                #    np.savetxt(SplitFolder+'yFold/'+MoveNames[j]+'-'+str(k).zfill(6)+'.csv', Ys[i], delimiter=",")
+                #    k+=1
+            
+            print(str(FileCount)+' files done in '+str(int((ti()-st)/6)/10)+' minutes', file, len(Moves))
+            FileCount += 1
+            return file, len(Moves)
     else:
         pass
 # %%
 
 
 # %%
-st = ti()
+files = os.listdir(folder)
+
+#files.reverse()
+
+#files = ['230418 recording1.csv','230419 recording1.csv','230420 recording1.csv','230421 recording1.csv']#,
+#         '230418 recording2.csv','230419 Srecording2.csv','230420 recording2.csv','230421 recording2.csv',
+#         '230425 recording1.csv','230425 recording2.csv','230426 recording2.csv','230427 recording2.csv',
+#         '230428 recording2.csv','230509 recording1.csv','230510 recording1.csv','230511 recording1.csv']
+
+# %%
+BeforeTamping = ['221206 recording1.csv','221207 recording1.csv','221208 recording1.csv','221209 recording1.csv',
+         '221206 recording2.csv','221207 recording2.csv','221208 recording2.csv','221209 recording2.csv']
+
+
+loops = int(len(files) / LoopFiles) 
+if len(files)%LoopFiles != 0:
+    loops += 1
+
+print('files', len(files), loops)
+# %% [markdown]
+# ## Project Specific Functions
+
 rr=[]
 
-for k in range(loops):
-    if k == loops -1:
-        tfiles = files[k*LoopFiles:]
-    else:
-        tfiles = files[k*LoopFiles:(k+1)*LoopFiles]
-    Results = Parallel(n_jobs=LoopFiles)(delayed(RunPrep)(file) for file in tfiles)
-        
-    rr.append(Results)
+#for k in range(loops):
+#    if k == loops -1:
+#        tfiles = files[k*LoopFiles:]
+#    else:
+#        tfiles = files[k*LoopFiles:(k+1)*LoopFiles]
+#    Results = Parallel(n_jobs=LoopFiles)(delayed(RunPrep)(file) for file in tfiles)
+#        
+#    rr.append(Results)
 
-    print(k, len(Results), (ti()-st)/60.0)
+#    print(k, len(Results), (ti()-st)/60.0)
     
+
+Results = Parallel(n_jobs=LoopFiles)(delayed(RunPrep)(files[i], i) for i in range(len(files)))
 
