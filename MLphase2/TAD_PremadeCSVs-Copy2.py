@@ -119,6 +119,7 @@ def parse_csv(file_path):
         df.columns = ['rx','ry','rz']
         features = df[['rx','ry','rz']].values.tolist()
     except:
+        print(file_path)
         features = np.zeros((1000,3)).tolist()
     
     try:
@@ -126,7 +127,8 @@ def parse_csv(file_path):
         label.columns = ['sx']
         labels = np.asarray(label.sx)
     except:
-        labels = np.asarray(np.zeros(1000,1))
+        labels = np.asarray(np.zeros((1000)))
+        print(file_path[:-8]+'Outs.csv')
         
     return features, labels
 
