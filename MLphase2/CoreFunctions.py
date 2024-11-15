@@ -32,6 +32,8 @@ if not 'Ledgends' in locals():
     Ledgends = True
 if not 'FFormat' in locals():
     FFormat = '.png'
+if not 'BWImage' in locals():
+    UseWBstyle = False
 
 HostName = platform.node()
 
@@ -82,12 +84,14 @@ elif Computer =='PortLap':
     folder = rootfolder + 'SmallCopy\\'
 
 #Standard cycle for collors and line styles
-default_cycler = (cycler('color', ['0.00', '0.40', '0.60', '0.70']) + cycler(linestyle=['-', '--', ':', '-.']))
-plt.rc('axes', prop_cycle=default_cycler)
-my_cmap = plt.get_cmap('gray')
-PlotWidthIn = 11
-PlotHeightIn = 3.75
-PlotDPI = 3000
+if UseWBstyle:
+    default_cycler = (cycler('color', ['0.00', '0.40', '0.60', '0.70']) + cycler(linestyle=['-', '--', ':', '-.']))
+    plt.rc('axes', prop_cycle=default_cycler)
+    my_cmap = plt.get_cmap('gray')
+
+    PlotWidthIn = 11
+    PlotHeightIn = 3.75
+    PlotDPI = 3000
 
 beta_a = 2
 beta_b = 5
