@@ -17,7 +17,7 @@ import datetime
 from itertools import compress
 
 import os
-import cv2
+#import cv2
 
 import multiprocessing
 from joblib import Parallel, delayed
@@ -82,12 +82,12 @@ elif Computer =='PortLap':
     folder = rootfolder + 'SmallCopy\\'
 
 #Standard cycle for collors and line styles
-default_cycler = (cycler('color', ['0.00', '0.40', '0.60', '0.70']) + cycler(linestyle=['-', '--', ':', '-.']))
-plt.rc('axes', prop_cycle=default_cycler)
-my_cmap = plt.get_cmap('gray')
+#default_cycler = (cycler('color', ['0.00', '0.40', '0.60', '0.70']) + cycler(linestyle=['-', '--', ':', '-.']))
+#plt.rc('axes', prop_cycle=default_cycler)
+#my_cmap = plt.get_cmap('gray')
 PlotWidthIn = 11
 PlotHeightIn = 3.75
-PlotDPI = 120
+PlotDPI = 240
 
 beta_a = 2
 beta_b = 5
@@ -100,10 +100,10 @@ spacer = 10
 
 num_cores = multiprocessing.cpu_count() -1
 
-SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
-OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
-OutputTitles = OutputVectors[0,:]
-OutputVectors = OutputVectors[1:,:]
+#SensorPositonFile = rootfolder + 'SensorStatsSmall.csv'
+#OutputVectors = np.genfromtxt(open(SensorPositonFile,'r'), delimiter=',',skip_header=1,dtype=int, missing_values=0)
+#OutputTitles = OutputVectors[0,:]
+#OutputVectors = OutputVectors[1:,:]
 
 
 def BetaWavelet(sizes, a = beta_a, b = beta_b, sineCycle = beta_cycles, cosineCycle = 0):
@@ -402,6 +402,23 @@ def getThumbprint(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsli
     
     return fp
 
+def CleanNanInf(data):
+    # Create a copy of the array to avoid in-place operation issues 
+    data_copy = np.copy(data) 
+
+    # Replace NaNs with 0 
+    data_copy = np.nan_to_num(data_copy, nan=0.0) 
+
+    # Replace positive and negative infinities with the maximum finite value in the array 
+    finite_values = data_copy[np.isfinite(data_copy)] 
+    max_finite_value = np.max(finite_values) 
+    data_copy[np.isinf(data_copy)] = max_finite_value 
+
+    # Convert to integers 
+    # data_copy = data_copy.astype(float32) 
+    
+    return data_copy
+
 def getThumbprint2(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numslices=5, slicethickness=0.12, 
                   valleysorpeaks='both', normconstant=1, plot=False):
     '''Modifications of DWFT code from Spencer Kirn and Margerat Rooney.  Calculates the thumbprint using
@@ -428,7 +445,9 @@ def getThumbprint2(data, wvt=WaveletToUse, ns=scales, scalespace = spacer, numsl
     
     #Get the coefficents
     cfX = cwt_fixed_scipy(data, ns, wvt,scalespace)
-
+    
+    cfX = CleanNanInf(cfX)
+    
     #normalize the coefficents to values between 0 and 1
     minVal = np.min(cfX)
     maxVal = np.max(cfX)
@@ -508,13 +527,14 @@ def PlotFingerPrint(data, title = '', SaveSpot = location, ToSave = Saving):
         Al,Ms  = np.meshgrid(xName,np.linspace(1,scales,scales))
 
     
+    
 
     fig1 = plt.figure(figsize=(PlotWidthIn,PlotHeightIn),dpi=PlotDPI)
     ax1 = plt.axes()
     if trim == 0:
-        cs1 = ax1.contourf(Al,Ms, data[:,:],cmap=my_cmap,levels=slices)
+        cs1 = ax1.contourf(Al,Ms, data[:,:],cmap=plt.get_cmap('gray'),levels=slices)
     else:
-        cs1 = ax1.contourf(Al,Ms, data[:,trim:-trim],cmap=my_cmap,levels=slices)
+        cs1 = ax1.contourf(Al,Ms, data[:,trim:-trim],cmap=plt.get_cmap('gray'),levels=slices)
 
     if Titles: plt.title(title)
     if ToSave: plt.savefig(SaveSpot+title.replace(" ", "").replace(":", "").replace(",", "").replace(".txt","")+FFormat)
@@ -929,7 +949,7 @@ def makeMPFast(DataMatrix, wvt = WaveletToUse, scales = 1000, spacer = 1, title 
 
     PrintMatrix = np.dstack((np.asarray(xPrint.T),np.asarray(yPrint.T),np.asarray(zPrint.T)))
 
-    if len(title)> 1:
-        cv2.imwrite(title + '.png', PrintMatrix)
+    #if len(title)> 1:
+    #    cv2.imwrite(title + '.png', PrintMatrix)
     
     return np.asarray(PrintMatrix)
